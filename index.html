@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>متا آنلاین - خدمات ویزای بشردوستانه</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.waves.min.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100..900&display=swap');
+        body {
+            font-family: 'Vazirmatn', sans-serif;
+        }
+        .form-container {
+            display: none;
+        }
+        .form-container.active {
+            display: block;
+            animation: fadeInUp 0.5s ease-in-out;
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen flex flex-col">
+
+    <div id="vanta-bg" class="fixed inset-0 -z-10 opacity-30"></div>
+
+    <header class="bg-gray-900/80 backdrop-blur-md border-b border-gray-800 sticky top-0 z-50 transition-all duration-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-14 h-14 rounded-xl overflow-hidden border border-gray-700 shadow-md flex items-center justify-center bg-black">
+                    <img src="https://lh3.googleusercontent.com/d/1h5DWLhrMRh2vDw8yGSxuxBNZmGjZJ9Xq" alt="Meta Online Logo" class="w-full h-full object-cover">
+                </div>
+                <div>
+                    <h1 class="text-xl font-black text-transparent bg-clip-text bg-gradient-to-l from-blue-400 to-indigo-400">متا آنلاین</h1>
+                    <p class="text-xs text-gray-400">خدمات ویزای بشردوستانه افغانستان</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <a href="https://wa.me/YOUR_PHONE_NUMBER" target="_blank" class="flex items-center gap-2 bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg shadow-green-600/20 transition-all transform hover:-translate-y-1">
+                    <i class="fab fa-whatsapp text-lg"></i>
+                    <span class="hidden md:inline">معلومات واتساپ</span>
+                </a>
+                <a href="https://facebook.com/YOUR_PAGE" target="_blank" class="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg shadow-blue-600/20 transition-all transform hover:-translate-y-1">
+                    <i class="fab fa-facebook text-lg"></i>
+                    <span class="hidden md:inline">فیسبوک ما</span>
+                </a>
+                <button id="menu-btn" class="md:hidden text-gray-400 hover:text-white focus:outline-none">
+                    <i class="fas fa-bars text-2xl"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col md:flex-row gap-8">
+        
+        <aside id="sidebar" class="w-full md:w-64 bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-4 sticky top-28 h-fit hidden md:block z-40">
+            <h2 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4 px-2">لیست خدمات و فرم‌ها</h2>
+            <nav class="space-y-1">
+                <button onclick="switchForm('australia')" class="nav-link w-full flex items-center gap-3 px-3 py-3 rounded-xl text-right text-sm font-medium transition-all bg-blue-600 text-white" data-country="australia">
+                    <i class="fas fa-passport text-lg opacity-80"></i> ثبت درخواست استرالیا
+                </button>
+                <button onclick="switchForm('germany')" class="nav-link w-full flex items-center gap-3 px-3 py-3 rounded-xl text-right text-sm font-medium transition-all text-gray-400 hover:bg-gray-700/50 hover:text-white" data-country="germany">
+                    <i class="fas fa-passport text-lg opacity-80"></i> ثبت درخواست آلمان
+                </button>
+                <button onclick="switchForm('italy')" class="nav-link w-full flex items-center gap-3 px-3 py-3 rounded-xl text-right text-sm font-medium transition-all text-gray-400 hover:bg-gray-700/50 hover:text-white" data-country="italy">
+                    <i class="fas fa-passport text-lg opacity-80"></i> ثبت درخواست ایتالیا
+                </button>
+                <button onclick="switchForm('switzerland')" class="nav-link w-full flex items-center gap-3 px-3 py-3 rounded-xl text-right text-sm font-medium transition-all text-gray-400 hover:bg-gray-700/50 hover:text-white" data-country="switzerland">
+                    <i class="fas fa-passport text-lg opacity-80"></i> ثبت درخواست سوئیس
+                </button>
+                <button onclick="switchForm('france')" class="nav-link w-full flex items-center gap-3 px-3 py-3 rounded-xl text-right text-sm font-medium transition-all text-gray-400 hover:bg-gray-700/50 hover:text-white" data-country="france">
+                    <i class="fas fa-passport text-lg opacity-80"></i> ثبت درخواست فرانسه
+                </button>
+                <button onclick="switchForm('canada')" class="nav-link w-full flex items-center gap-3 px-3 py-3 rounded-xl text-right text-sm font-medium transition-all text-gray-400 hover:bg-gray-700/50 hover:text-white" data-country="canada">
+                    <i class="fas fa-passport text-lg opacity-80"></i> ثبت درخواست کانادا
+                </button>
+            </nav>
+        </aside>
+
+        <main class="flex-1">
+            <div class="bg-gray-850 border border-gray-800 rounded-3xl p-6 md:p-8 shadow-xl relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl -z-10"></div>
+                
+                <h2 id="main-title" class="text-2xl font-black mb-6 text-white flex items-center gap-3">
+                    <i class="fas fa-file-invoice text-blue-500"></i>
+                    <span>فرم ثبت درخواست ویزای بشردوستانه استرالیا</span>
+                </h2>
+
+                <form id="visaForm" onsubmit="handleSubmit(event)" class="space-y-6">
+                    <input type="hidden" id="country_input" name="country" value="استرالیا">
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">نام کامل (به انگلیسی)</label>
+                            <input type="text" name="full_name" required class="w-full bg-gray-900/50 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">نام پدر</label>
+                            <input type="text" name="father_name" required class="w-full bg-gray-900/50 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition-all">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">شماره تماس / واتساپ فعال</label>
+                            <input type="tel" name="phone" required placeholder="07XXXXXXXX" class="w-full bg-gray-900/50 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 text-left dir-ltr focus:outline-none focus:border-blue-500 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">ایمیل آدرس</label>
+                            <input type="email" name="email" required placeholder="example@mail.com" class="w-full bg-gray-900/50 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 text-left dir-ltr focus:outline-none focus:border-blue-500 transition-all">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">شماره پاسپورت یا تذکره</label>
+                            <input type="text" name="document_id" required class="w-full bg-gray-900/50 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">محل فعلی سکونت (شهر / کشور)</label>
+                            <input type="text" name="current_location" required placeholder="مثلاً: کابل، افغانستان یا اسلام‌آباد، پاکستان" class="w-full bg-gray-900/50 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition-all">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-2">شرح مختصر از تهدیدات یا دلایل کیس بشردوستانه</label>
+                        <textarea name="case_details" rows="4" required placeholder="لطفاً دلایل اصلی خود را جهت ثبت در فورمه شرح دهید..." class="w-full bg-gray-900/50 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition-all"></textarea>
+                    </div>
+
+                    <div class="p-4 bg-blue-500/10 border border-blue-500/20 rounded-2xl text-sm text-blue-400 flex items-start gap-3">
+                        <i class="fas fa-info-circle text-lg mt-0.5"></i>
+                        <p>اطلاعات شما به صورت کاملاً امن ثبت و مستقیماً جهت بررسی اولیه به سیستم مدیریت "متا آنلاین" ارسال خواهد شد.</p>
+                    </div>
+
+                    <button type="submit" id="submitBtn" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-4 rounded-xl shadow-xl shadow-blue-600/20 transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2">
+                        <span id="btnText">ارسال و ثبت نهایی درخواست</span>
+                        <span id="loadingSpinner" class="hidden">
+                            <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </span>
+                        <i id="btnIcon" class="fas fa-paper-plane text-sm"></i>
+                    </button>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <footer class="bg-gray-950 border-t border-gray-800 mt-auto py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div class="flex items-center gap-4 text-gray-400 text-sm">
+                <i class="fas fa-map-marked-alt text-3xl text-blue-500"></i>
+                <div>
+                    <h4 class="font-bold text-white text-base">آدرس حضوری دفتر مرکزی:</h4>
+                    <p>کابل، کوته سنگی، گولای دواخانه، مارکیت سبزه وار، منزل دوم، دفتر ۱۴</p>
+                </div>
+            </div>
+            <div class="text-center md:text-left text-xs text-gray-500">
+                &copy; ۲۰۲۶ متا آنلاین. تمامی حقوق محفوظ است. طراحی شده برای ثبت درخواست‌های بشر دوستانه اتباع افغانستان.
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // ۱. فعال‌سازی انیمیشن زنده موج در پس‌زمینه
+        VANTA.WAVES({
+            el: "#vanta-bg",
+            mouseControls: true,
+            touchControls: true,
+            gyroControls: false,
+            minHeight: 200.00,
+            minWidth: 200.00,
+            scale: 1.00,
+            scaleMobile: 1.00,
+            color: 0x0f172a,
+            shininess: 35.00,
+            waveHeight: 15.00,
+            waveSpeed: 0.60
+        });
+
+        // ۲. منطق جاابجایی بین فرم‌های کشورهای مختلف
+        const countryNames = {
+            australia: "استرالیا",
+            germany: "آلمان",
+            italy: "ایتالیا",
+            switzerland: "سوئیس",
+            france: "فرانسه",
+            canada: "کانادا"
+        };
+
+        function switchForm(country) {
+            document.getElementById('country_input').value = countryNames[country];
+            document.getElementById('main-title').querySelector('span').innerText = `فرم ثبت درخواست ویزای بشردوستانه ${countryNames[country]}`;
+            
+            const form = document.getElementById('visaForm');
+            form.style.animation = 'none';
+            form.offsetHeight; 
+            form.style.animation = 'fadeInUp 0.5s ease-in-out';
+
+            document.querySelectorAll('.nav-link').forEach(btn => {
+                if(btn.getAttribute('data-country') === country) {
+                    btn.className = "nav-link w-full flex items-center gap-3 px-3 py-3 rounded-xl text-right text-sm font-medium transition-all bg-blue-600 text-white";
+                } else {
+                    btn.className = "nav-link w-full flex items-center gap-3 px-3 py-3 rounded-xl text-right text-sm font-medium transition-all text-gray-400 hover:bg-gray-700/50 hover:text-white";
+                }
+            });
+
+            if (window.innerWidth < 768) {
+                document.getElementById('sidebar').classList.add('hidden');
+            }
+        }
+
+        document.getElementById('menu-btn').addEventListener('click', () => {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('hidden');
+        });
+
+        // ۳. اتصال به گوگل شیت و ارسال اطلاعات به همراه لودینگ
+        const WEB_APP_URL = "YOUR_GOOGLE_SCRIPT_WEB_APP_URL";
+
+        function handleSubmit(event) {
+            event.preventDefault();
+            const form = event.target;
+            const submitBtn = document.getElementById('submitBtn');
+            const btnText = document.getElementById('btnText');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            const btnIcon = document.getElementById('btnIcon');
+            
+            if(WEB_APP_URL === "YOUR_GOOGLE_SCRIPT_WEB_APP_URL") {
+                alert("توجه: لطفاً ابتدا آدرس اسکریپت گوگل شیت خود را در متغیر WEB_APP_URL کد قرار دهید.");
+                return;
+            }
+
+            // فعال کردن انیمیشن لودینگ و غیرفعال کردن دکمه جهت جلوگیری از ارسال چندباره
+            submitBtn.disabled = true;
+            btnText.innerText = "در حال ارسال اطلاعات و پیوند به گوگل شیت...";
+            loadingSpinner.classList.remove('hidden');
+            btnIcon.classList.add('hidden');
+
+            const formData = new FormData(form);
+            
+            fetch(WEB_APP_URL, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                alert("درخواست شما با موفقیت در سیستم گوگل شیت ثبت شد. تیم متا آنلاین به زودی با شما تماس خواهد گرفت.");
+                form.reset();
+            })
+            .catch(error => {
+                console.error('Error!', error.message);
+                alert("خطایی در ذخیره‌سازی رخ داد! لطفاً مجدداً تلاش کنید یا از طریق واتساپ در ارتباط شوید.");
+            })
+            .finally(() => {
+                // بازگرداندن دکمه به حالت اولیه پس از پایان فرآیند لودینگ
+                submitBtn.disabled = false;
+                btnText.innerText = "ارسال و ثبت نهایی درخواست";
+                loadingSpinner.classList.add('hidden');
+                btnIcon.classList.remove('hidden');
+            });
+        }
+    </script>
+</body>
+</html>
