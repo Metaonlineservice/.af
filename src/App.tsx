@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate, useParams, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { LanguageProvider } from './contexts/LanguageContext';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
 import { Services } from './components/Services';
@@ -11,6 +12,11 @@ import { ChatWidget } from './components/ChatWidget';
 import { EmergencyModal } from './components/EmergencyModal';
 import { VisaForm } from './components/VisaForm';
 import { AdminPanel } from './components/AdminPanel';
+import { AppointmentForm } from './components/AppointmentForm';
+import { MultiStepForm } from './components/MultiStepForm';
+import { SuccessfulCases } from './components/SuccessfulCases';
+import { InProcessCases } from './components/InProcessCases';
+import { RegisteredCustomers } from './components/RegisteredCustomers';
 import { EmbassyFormType, EMBASSY_FORMS } from './types';
 
 const ADMIN_PASSWORD = '123456789';
@@ -75,6 +81,13 @@ function FormPage() {
   const { type } = useParams<{ type: string }>();
   const navigate = useNavigate();
   const form = EMBASSY_FORMS.find(f => f.id === type);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [emergencyOpen, setEmergencyOpen] = useState(false);
+
+  const handleFormSelect = (formId: EmbassyFormType) => {
+    navigate(`/form/${formId}`);
+    setSidebarOpen(false);
+  };
 
   if (!form) {
     return (
@@ -91,12 +104,37 @@ function FormPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900" dir="rtl">
-      <Header onMenuClick={() => {}} onEmergencyClick={() => {}} />
+      <Header
+        onMenuClick={() => setSidebarOpen(true)}
+        onEmergencyClick={() => setEmergencyOpen(true)}
+        onAppointmentClick={() => navigate('/appointment')}
+      />
       <div className="pt-20 pb-16 px-4 max-w-4xl mx-auto">
         <VisaForm formType={form.id as EmbassyFormType} />
       </div>
       <Footer />
-      <ChatWidget />
+      <Sidebar
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        onFormSelect={handleFormSelect}
+        onAppointmentClick={() => { navigate('/appointment'); setSidebarOpen(false); }}
+      />
+      <EmergencyModal isOpen={emergencyOpen} onClose={() => setEmergencyOpen(false)} />
+      <ChatWidget onAppointmentClick={() => navigate('/appointment')} />
+    </div>
+  );
+}
+
+// Appointment Page
+function AppointmentPage() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800" dir="rtl">
+      <Header onMenuClick={() => {}} onEmergencyClick={() => {}} onAppointmentClick={() => {}} />
+      <div className="pt-20">
+        <AppointmentForm />
+      </div>
+      <Footer />
+      <ChatWidget onAppointmentClick={() => {}} />
     </div>
   );
 }
@@ -111,15 +149,29 @@ function HomePage() {
     navigate(`/form/${formId}`);
   };
 
+  const handleAppointmentClick = () => {
+    navigate('/appointment');
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900" dir="rtl">
       <Header
         onMenuClick={() => setSidebarOpen(true)}
         onEmergencyClick={() => setEmergencyOpen(true)}
+        onAppointmentClick={handleAppointmentClick}
       />
       <main className="pt-14">
-        <Hero onFormClick={() => handleFormSelect('germany')} />
+        <Hero onFormClick={() => handleFormSelect('germany')} onAppointmentClick={handleAppointmentClick} />
         <Services />
+        <div id="successful-cases">
+          <SuccessfulCases />
+        </div>
+        <div id="inprocess-cases">
+          <InProcessCases />
+        </div>
+        <div id="registered-customers">
+          <RegisteredCustomers />
+        </div>
         <Reviews />
       </main>
       <Footer />
@@ -127,9 +179,20 @@ function HomePage() {
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
         onFormSelect={handleFormSelect}
+        onAppointmentClick={handleAppointmentClick}
       />
       <EmergencyModal isOpen={emergencyOpen} onClose={() => setEmergencyOpen(false)} />
-      <ChatWidget />
+      <ChatWidget onAppointmentClick={handleAppointmentClick} />
+    </div>
+  );
+}
+
+// Multi-Step Form Page
+function MultiStepFormPage() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800" dir="rtl">
+      <MultiStepForm />
+      <ChatWidget onAppointmentClick={() => window.location.href = '/appointment'} />
     </div>
   );
 }
@@ -140,6 +203,8 @@ function AppContent() {
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/form/:type" element={<FormPage />} />
+      <Route path="/appointment" element={<AppointmentPage />} />
+      <Route path="/multiform" element={<MultiStepFormPage />} />
       <Route path="/admin/login" element={<AdminLoginPage />} />
       <Route path="/admin" element={<AdminGuard />} />
     </Routes>
@@ -149,9 +214,11 @@ function AppContent() {
 function App() {
   return (
     <ThemeProvider>
-      <BrowserRouter>
-        <AppContent />
-      </BrowserRouter>
+      <LanguageProvider>
+        <BrowserRouter>
+          <AppContent />
+        </BrowserRouter>
+      </LanguageProvider>
     </ThemeProvider>
   );
 }

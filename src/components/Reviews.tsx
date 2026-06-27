@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Star, Quote } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const SHEETDB_API = 'https://sheetdb.io/api/v1/aefcf2ew9qblp';
 
@@ -25,7 +26,7 @@ const FLAG: Record<string, string> = {
   other: '🌍',
 };
 
-// Default reviews if no data from Google Sheets
+// Default reviews - 12 reviews for better scrolling effect
 const DEFAULT_REVIEWS: Review[] = [
   { id: '1', name: 'احمد کریمی', rating: '5', comment: 'خدمات عالی و حرفه‌ای. تیم میتا در تمام مراحل همراه من بودند.', country: 'کابل', form_type: 'germany', approved: 'true' },
   { id: '2', name: 'فاطمه محمدی', rating: '5', comment: 'بسیار راضی هستم. ویزای استرالیا در کوتاه‌ترین زمان گرفته شد.', country: 'هرات', form_type: 'australia', approved: 'true' },
@@ -35,9 +36,14 @@ const DEFAULT_REVIEWS: Review[] = [
   { id: '6', name: 'زهرا احمدی', rating: '5', comment: 'کامل‌ترین خدمات مهاجرتی که تا حالا تجربه کردم.', country: 'هرات', form_type: 'switzerland', approved: 'true' },
   { id: '7', name: 'محمد یعقوبی', rating: '5', comment: 'تیم میتا بهترین مشاوره را داد. خیلی راضی بودم.', country: 'کابل', form_type: 'germany', approved: 'true' },
   { id: '8', name: 'سارا نوری', rating: '5', comment: 'ویزای شنگن من در کمتر از ۳ ماه صادر شد.', country: 'مزار', form_type: 'france', approved: 'true' },
+  { id: '9', name: 'ناصر بیاتی', rating: '5', comment: 'مشاوره حقوقی عالی. وکیل متخصص بود.', country: 'کابل', form_type: 'australia', approved: 'true' },
+  { id: '10', name: 'لیلا صادقی', rating: '5', comment: 'پرونده پیوند فامیلی با موفقیت انجام شد.', country: 'هرات', form_type: 'italy', approved: 'true' },
+  { id: '11', name: 'کاریم نوری', rating: '5', comment: 'از اولین مشاوره تا ویزا، همراهی عالی.', country: 'ننگرهار', form_type: 'canada', approved: 'true' },
+  { id: '12', name: 'شکیبا موسی', rating: '5', comment: 'تیم حرفه‌ای و پاسخگویی سریع.', country: 'بامیان', form_type: 'switzerland', approved: 'true' },
 ];
 
 export function Reviews() {
+  const { t } = useLanguage();
   const [reviews, setReviews] = useState<Review[]>([]);
   const trackRef = useRef<HTMLDivElement>(null);
   const [paused, setPaused] = useState(false);
@@ -64,7 +70,8 @@ export function Reviews() {
       .finally(() => setLoading(false));
   }, []);
 
-  const displayReviews = reviews.length > 0 ? [...reviews, ...reviews] : [];
+  // Triple the reviews for seamless right-to-left scrolling
+  const displayReviews = reviews.length > 0 ? [...reviews, ...reviews, ...reviews] : [];
 
   if (loading) {
     return (
@@ -85,15 +92,15 @@ export function Reviews() {
       <div className="max-w-7xl mx-auto px-4 mb-10 text-center">
         <div className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-full mb-4">
           <Star className="w-4 h-4 text-emerald-500 fill-emerald-500" />
-          <span className="text-emerald-600 dark:text-emerald-400 text-sm font-medium">نظرات موکلین</span>
+          <span className="text-emerald-600 dark:text-emerald-400 text-sm font-medium">{t('reviews')}</span>
         </div>
         <h2 className="text-3xl font-bold text-slate-900 dark:text-white">
-          تجربه موکلین ما
+          {t('ourClientsExperience')}
         </h2>
         <p className="text-slate-500 dark:text-slate-400 mt-2">{reviews.length}+ نظر از موکلین واقعی</p>
       </div>
 
-      {/* Scrolling Track */}
+      {/* Scrolling Track - Right to Left */}
       <div
         className="relative"
         onMouseEnter={() => setPaused(true)}
@@ -105,10 +112,10 @@ export function Reviews() {
 
         <div
           ref={trackRef}
-          className="flex gap-5 px-6"
+          className="flex gap-5"
           style={{
             width: 'max-content',
-            animation: paused ? 'none' : 'scrollTrack 30s linear infinite',
+            animation: paused ? 'none' : 'scrollLeft 40s linear infinite',
           }}
         >
           {displayReviews.map((r, i) => (
@@ -118,9 +125,9 @@ export function Reviews() {
       </div>
 
       <style>{`
-        @keyframes scrollTrack {
+        @keyframes scrollLeft {
           0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
+          100% { transform: translateX(-33.33%); }
         }
       `}</style>
     </section>

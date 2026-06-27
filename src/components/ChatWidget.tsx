@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MessageCircle, X, Send, Bot, User } from 'lucide-react';
+import { MessageCircle, X, Send, Bot, User, Calendar, ArrowLeft } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const SHEETDB_API = 'https://sheetdb.io/api/v1/aefcf2ew9qblp';
 
@@ -8,6 +9,8 @@ interface Message {
   from: 'bot' | 'user';
   text: string;
   time: string;
+  hasAction?: boolean;
+  actionType?: 'appointment';
 }
 
 interface ChatResponse {
@@ -21,21 +24,28 @@ const DEFAULT_RESPONSES: Record<string, string[]> = {
   سلام: ['سلام! خوش آمدید به خدمات آنلاین میتا. چطور می‌توانم کمک کنم؟'],
   ویزا: ['ما خدمات ویزا برای کشورهای استرالیا، آلمان، ایتالیا، سوئیس، فرانسه و کانادا ارائه می‌دهیم. جهت ثبت درخواست، از منوی کناری استفاده کنید.'],
   قیمت: ['تعرفه خدمات ما:\n• درخواست عادی: ۳,۰۰۰ افغانی\n• نیمه عالی: ۵,۵۰۰ افغانی\n• تخصصی با وکیل: ۱۰,۰۰۰ افغانی'],
-  آدرس: ['آدرس دفتر ما: کابل، کوته سنگی، گولای دواخانه، مارکیت سبزه وار، منزل دوم، دفتر ۱۴'],
-  تماس: ['برای تماس با ما:\nواتساپ: +989012055578\nایمیل: immigration.tehran@tuta.io'],
+  آدرس: ['قبل از مراجعه حضوری اخذ قرار ملاقات الزامی میباشد. برای اخذ قرار ملاقات حضوری روی دکمه زیر کلیک کنید.'],
+  تماس: ['برای تماس با ما:\nواتساپ: +989012055578\nتلفن: +93730556547\nایمیل: metaonlineservice3@gmail.com'],
   ساعت: ['ساعت کاری دفتر: شنبه تا چهارشنبه ۸ صبح تا ۵ بعدازظهر'],
   مدارک: ['مدارک مورد نیاز:\n• پاسپورت معتبر (بیش از ۶ ماه اعتبار)\n• تذکره برقی\n• عکس پرسنلی\n• مدارک تحصیلی (اختیاری)'],
   پناهندگی: ['ما در زمینه پرونده‌های پناهندگی و حقوق بشری تخصص داریم. لطفاً فرم مربوطه را پر کنید یا با ما تماس بگیرید.'],
+  قرار: ['برای رزرو قرار ملاقات روی دکمه زیر کلیک کنید.'],
+  وقت: ['برای اخذ وقت ملاقات روی دکمه زیر کلیک کنید.'],
 };
 
 const DEFAULT_REPLY = ['متشکرم از سوال شما! برای راهنمایی بهتر، لطفاً با واتساپ ما تماس بگیرید: +989012055578'];
-const QUICK_REPLIES = ['ویزا', 'قیمت', 'آدرس', 'مدارک', 'تماس'];
+const QUICK_REPLIES = ['ویزا', 'قیمت', 'آدرس', 'مدارک', 'تماس', 'قرار ملاقات'];
 
 function getTime() {
   return new Date().toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' });
 }
 
-export function ChatWidget() {
+interface ChatWidgetProps {
+  onAppointmentClick: () => void;
+}
+
+export function ChatWidget({ onAppointmentClick }: ChatWidgetProps) {
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     { id: '0', from: 'bot', text: 'سلام! به خدمات آنلاین میتا خوش آمدید. چطور می‌توانم کمک کنم؟', time: getTime() }
@@ -52,7 +62,6 @@ export function ChatWidget() {
   }, []);
 
   useEffect(() => {
-    // Load chatbot responses from SheetDB
     fetch(`${SHEETDB_API}?sheet=chatbot_responses`)
       .then(res => res.json())
       .then(data => {
@@ -67,24 +76,33 @@ export function ChatWidget() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, typing]);
 
-  const getReply = (text: string): string[] => {
+  const getReply = (text: string): { replies: string[]; hasAction: boolean; actionType?: 'appointment' } => {
     const lower = text.toLowerCase();
+
+    // Check for address/appointment keywords
+    if (lower.includes('آدرس') || lower.includes('قرار') || lower.includes('وقت') || lower.includes('ملاقات') || lower.includes('appointment')) {
+      return {
+        replies: [t('addressResponse')],
+        hasAction: true,
+        actionType: 'appointment'
+      };
+    }
 
     // Check SheetDB responses first
     for (const r of responses) {
       if (lower.includes(r.keyword.toLowerCase())) {
-        return [r.response];
+        return { replies: [r.response], hasAction: false };
       }
     }
 
     // Fall back to default responses
     for (const key of Object.keys(DEFAULT_RESPONSES)) {
       if (lower.includes(key)) {
-        return DEFAULT_RESPONSES[key];
+        return { replies: DEFAULT_RESPONSES[key], hasAction: false };
       }
     }
 
-    return DEFAULT_REPLY;
+    return { replies: DEFAULT_REPLY, hasAction: false };
   };
 
   const sendMessage = async (text: string) => {
@@ -97,7 +115,7 @@ export function ChatWidget() {
 
     await new Promise(r => setTimeout(r, 1000 + Math.random() * 500));
 
-    const replies = getReply(text);
+    const { replies, hasAction, actionType } = getReply(text);
     setTyping(false);
     replies.forEach((reply, i) => {
       setTimeout(() => {
@@ -106,9 +124,18 @@ export function ChatWidget() {
           from: 'bot',
           text: reply,
           time: getTime(),
+          hasAction,
+          actionType,
         }]);
       }, i * 300);
     });
+  };
+
+  const handleActionClick = () => {
+    if (onAppointmentClick) {
+      onAppointmentClick();
+      setOpen(false);
+    }
   };
 
   return (
@@ -138,7 +165,7 @@ export function ChatWidget() {
       {/* Chat Panel */}
       {open && (
         <div className="fixed bottom-24 left-6 z-50 w-[calc(100vw-3rem)] max-w-sm animate-slide-up">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col" style={{ height: 450 }}>
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col" style={{ height: 480 }}>
             {/* Header */}
             <div className="bg-gradient-to-l from-emerald-500 to-emerald-600 p-4 flex items-center gap-3">
               <div className="relative">
@@ -163,13 +190,27 @@ export function ChatWidget() {
                   <div className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-white text-xs font-bold ${msg.from === 'bot' ? 'bg-emerald-500' : 'bg-gold-400'}`}>
                     {msg.from === 'bot' ? <Bot className="w-4 h-4" /> : <User className="w-4 h-4 text-slate-900" />}
                   </div>
-                  <div className={`max-w-[75%] px-3 py-2 rounded-2xl text-sm whitespace-pre-line ${
-                    msg.from === 'bot'
-                      ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-tl-none shadow-sm'
-                      : 'bg-gold-400 text-slate-900 rounded-tr-none'
-                  }`}>
-                    {msg.text}
-                    <p className={`text-xs mt-1 opacity-60 ${msg.from === 'user' ? 'text-right' : 'text-left'}`}>{msg.time}</p>
+                  <div className={`max-w-[75%] ${msg.from === 'bot' ? 'text-right' : 'text-right'}`}>
+                    <div className={`px-3 py-2 rounded-2xl text-sm whitespace-pre-line ${
+                      msg.from === 'bot'
+                        ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-tl-none shadow-sm'
+                        : 'bg-gold-400 text-slate-900 rounded-tr-none'
+                    }`}>
+                      {msg.text}
+                    </div>
+                    <p className={`text-xs mt-1 opacity-60 ${msg.from === 'user' ? 'text-left' : 'text-right'}`}>{msg.time}</p>
+
+                    {/* Action Button (for appointment) */}
+                    {msg.hasAction && msg.actionType === 'appointment' && (
+                      <button
+                        onClick={handleActionClick}
+                        className="mt-2 flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium rounded-xl transition-colors w-full justify-center"
+                      >
+                        <Calendar className="w-4 h-4" />
+                        {t('bookAppointment')}
+                        <ArrowLeft className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}

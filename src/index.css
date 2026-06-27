@@ -24,43 +24,43 @@
 
 @layer components {
   .btn-primary {
-    @apply bg-gold-400 text-slate-900 font-semibold px-6 py-3 rounded-lg
-           transition-all duration-300 hover:bg-gold-500 hover:shadow-lg
-           hover:shadow-gold-400/30 active:scale-95 disabled:opacity-50
+    @apply bg-navy-700 text-white font-semibold px-6 py-3 rounded-lg
+           transition-all duration-300 hover:bg-navy-800 hover:shadow-lg
+           hover:shadow-navy-700/30 active:scale-95 disabled:opacity-50
            disabled:cursor-not-allowed;
   }
 
   .btn-secondary {
-    @apply bg-slate-700 text-white font-semibold px-6 py-3 rounded-lg
-           transition-all duration-300 hover:bg-slate-600 border border-slate-600
+    @apply bg-corporate-700 text-white font-semibold px-6 py-3 rounded-lg
+           transition-all duration-300 hover:bg-corporate-800 border border-corporate-600
            active:scale-95;
   }
 
   .btn-outline {
-    @apply border-2 border-gold-400 text-gold-400 font-semibold px-6 py-3 rounded-lg
-           transition-all duration-300 hover:bg-gold-400 hover:text-slate-900
+    @apply border-2 border-navy-600 text-navy-700 font-semibold px-6 py-3 rounded-lg
+           transition-all duration-300 hover:bg-navy-700 hover:text-white
            active:scale-95;
   }
 
   .input-field {
-    @apply w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-300
-           dark:border-slate-600 rounded-lg text-slate-900 dark:text-white
-           placeholder-slate-400 dark:placeholder-slate-500
-           focus:ring-2 focus:ring-gold-400 focus:border-transparent
+    @apply w-full px-4 py-3 bg-white dark:bg-navy-950 border border-corporate-200
+           dark:border-navy-700 rounded-lg text-navy-900 dark:text-white
+           placeholder-corporate-400 dark:placeholder-corporate-500
+           focus:ring-2 focus:ring-navy-500 focus:border-transparent
            transition-all duration-200;
   }
 
   .select-field {
-    @apply w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-300
-           dark:border-slate-600 rounded-lg text-slate-900 dark:text-white
-           focus:ring-2 focus:ring-gold-400 focus:border-transparent
+    @apply w-full px-4 py-3 bg-white dark:bg-navy-950 border border-corporate-200
+           dark:border-navy-700 rounded-lg text-navy-900 dark:text-white
+           focus:ring-2 focus:ring-navy-500 focus:border-transparent
            transition-all duration-200 cursor-pointer;
   }
 
   .card {
-    @apply bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200
-           dark:border-slate-700 overflow-hidden transition-all duration-300
-           hover:shadow-xl hover:border-gold-400/30;
+    @apply bg-white dark:bg-navy-900 rounded-xl shadow-lg border border-corporate-100
+           dark:border-navy-800 overflow-hidden transition-all duration-300
+           hover:shadow-xl hover:border-navy-300/50 dark:hover:border-navy-600;
   }
 
   .badge {
@@ -68,7 +68,7 @@
   }
 
   .badge-gold {
-    @apply badge bg-gold-400/20 text-gold-600 dark:text-gold-400;
+    @apply badge bg-navy-100 dark:bg-navy-800 text-navy-700 dark:text-navy-300;
   }
 
   .badge-success {
@@ -76,7 +76,7 @@
   }
 
   .section-heading {
-    @apply text-2xl md:text-3xl font-bold text-slate-900 dark:text-white mb-6;
+    @apply text-2xl md:text-3xl font-bold text-navy-900 dark:text-white mb-6;
   }
 
   .form-group {
@@ -84,7 +84,7 @@
   }
 
   .form-label {
-    @apply block text-sm font-medium text-slate-700 dark:text-slate-300;
+    @apply block text-sm font-medium text-corporate-700 dark:text-corporate-300;
   }
 
   .form-error {
@@ -92,24 +92,24 @@
   }
 
   .radio-option {
-    @apply flex items-center gap-3 p-3 rounded-lg border border-slate-200
-           dark:border-slate-600 cursor-pointer transition-all duration-200
-           hover:border-gold-400 hover:bg-gold-400/10 dark:hover:bg-slate-700/50;
+    @apply flex items-center gap-3 p-3 rounded-lg border border-corporate-200
+           dark:border-navy-700 cursor-pointer transition-all duration-200
+           hover:border-navy-400 hover:bg-navy-50 dark:hover:bg-navy-800/50;
   }
 
   .radio-option.active {
-    @apply border-gold-400 bg-gold-400/10;
+    @apply border-navy-500 bg-navy-50 dark:bg-navy-800;
   }
 
   .checkbox-option {
     @apply flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-all duration-200
-           hover:bg-slate-50 dark:hover:bg-slate-700/50;
+           hover:bg-corporate-50 dark:hover:bg-navy-800/50;
   }
 
   .file-upload {
-    @apply w-full p-6 border-2 border-dashed border-slate-300 dark:border-slate-600
+    @apply w-full p-6 border-2 border-dashed border-corporate-300 dark:border-navy-600
            rounded-lg text-center cursor-pointer transition-all duration-200
-           hover:border-gold-400 hover:bg-gold-400/10 dark:hover:bg-slate-700/50;
+           hover:border-navy-400 hover:bg-navy-50/50 dark:hover:bg-navy-800/50;
   }
 }
 
@@ -137,5 +137,68 @@
 
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
+  }
+
+  /* Custom Animations */
+  .animate-zoom-pulse {
+    animation: zoomPulse 2s ease-in-out infinite;
+  }
+
+  .animate-ping-slow {
+    animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+  }
+
+  .animate-bounce-slow {
+    animation: bounce 2s ease-in-out infinite;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.3s ease-out forwards;
+  }
+
+  .animate-slide-down {
+    animation: slideDown 0.2s ease-out forwards;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.3s ease-out forwards;
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-out forwards;
+  }
+
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  @keyframes zoomPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
   }
 }

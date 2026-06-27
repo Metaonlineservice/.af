@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, Send, Check, AlertCircle, User, Phone, Mail, FileText, MapPin, Calendar, Users, Hash } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Send, Check, AlertCircle, User, Phone, Mail, FileText, MapPin, Calendar, Users, Hash, Save, RotateCcw } from 'lucide-react';
 import { EmbassyFormType, EMBASSY_FORMS } from '../types';
 
 const SHEETDB_API = 'https://sheetdb.io/api/v1/aefcf2ew9qblp';
@@ -36,22 +36,39 @@ const COUNTRIES = ['افغانستان', 'ایران', 'پاکستان', 'سای
 const AWARENESS_OPTIONS = ['واتساپ', 'فیسبوک', 'اینستاگرام', 'معرفی دوست', 'سایر'];
 const LEGAL_DOCS_OPTIONS = ['پاسپورت', 'تذکره', 'حکم دادگاه', 'مدرک کار', 'سایر'];
 
+const DEFAULT_FORM_DATA: VisaFormData = {
+  firstName: '', lastName: '', fatherName: '', caseType: '',
+  familyCount: 1, passportNumber: '', dateOfBirth: '',
+  sonsCount: 0, daughtersCount: 0, country: 'افغانستان',
+  province: '', whatsappNumber: '', emergencyContact: '',
+  email: '', q1SecurityProblems: '', q2PriorFilings: '',
+  q3ProofFiles: '', q4TransitBudget: '', q5PassportValidity: '',
+  awarenessSource: [], legalDocs: [],
+};
+
 export function VisaForm({ formType }: VisaFormProps) {
   const form = EMBASSY_FORMS.find(f => f.id === formType);
-  const [formData, setFormData] = useState<VisaFormData>({
-    firstName: '', lastName: '', fatherName: '', caseType: '',
-    familyCount: 1, passportNumber: '', dateOfBirth: '',
-    sonsCount: 0, daughtersCount: 0, country: 'افغانستان',
-    province: '', whatsappNumber: '', emergencyContact: '',
-    email: '', q1SecurityProblems: '', q2PriorFilings: '',
-    q3ProofFiles: '', q4TransitBudget: '', q5PassportValidity: '',
-    awarenessSource: [], legalDocs: [],
+  const [formData, setFormData] = useState<VisaFormData>(() => {
+    const saved = localStorage.getItem(`visa_form_${formType}`);
+    return saved ? JSON.parse(saved) : DEFAULT_FORM_DATA;
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [invoiceNumber, setInvoiceNumber] = useState('');
+  const [showSavedMsg, setShowSavedMsg] = useState(false);
+
+  // Check for saved data on mount
+  useEffect(() => {
+    const saved = localStorage.getItem(`visa_form_${formType}`);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed.firstName || parsed.lastName || parsed.email) {
+        setShowSavedMsg(true);
+      }
+    }
+  }, [formType]);
 
   const update = (k: keyof VisaFormData, v: any) => {
     setFormData(p => ({ ...p, [k]: v }));
@@ -86,6 +103,26 @@ export function VisaForm({ formType }: VisaFormProps) {
     if (formData.legalDocs.length === 0) e.legalDocs = 'حداقل یک گزینه انتخاب کنید';
     setErrors(e);
     return Object.keys(e).length === 0;
+  };
+
+  const saveDraft = () => {
+    localStorage.setItem(`visa_form_${formType}`, JSON.stringify(formData));
+    setShowSavedMsg(true);
+    setTimeout(() => setShowSavedMsg(false), 3000);
+  };
+
+  const loadDraft = () => {
+    const saved = localStorage.getItem(`visa_form_${formType}`);
+    if (saved) {
+      setFormData(JSON.parse(saved));
+      setShowSavedMsg(false);
+    }
+  };
+
+  const clearDraft = () => {
+    localStorage.removeItem(`visa_form_${formType}`);
+    setFormData(DEFAULT_FORM_DATA);
+    setShowSavedMsg(false);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -168,12 +205,32 @@ export function VisaForm({ formType }: VisaFormProps) {
           <p className="text-slate-500 mb-4">شماره پیگیری شما:</p>
           <p className="text-2xl font-mono font-bold text-gold-500 mb-6">{invoiceNumber}</p>
           <p className="text-sm text-slate-400 mb-6">تیم ما ظرف ۲۴ ساعت با شما تماس خواهد گرفت.</p>
-          <button onClick={() => window.location.href = '/'} className="px-8 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold rounded-xl">
+          <button onClick={() => { localStorage.removeItem(`visa_form_${formType}`); window.location.href = '/'; }} className="px-8 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold rounded-xl">
             بازگشت به صفحه اصلی
           </button>
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* Saved Draft Notification */}
+          {showSavedMsg && (
+            <div className="flex items-center justify-between gap-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
+              <div className="flex items-center gap-3">
+                <Save className="w-5 h-5 text-blue-500" />
+                <div>
+                  <p className="text-sm font-medium text-blue-700 dark:text-blue-400">اطلاعات ذخیره شده قبلی موجود است</p>
+                  <p className="text-xs text-blue-600 dark:text-blue-500">آیا می‌خواهید ادامه دهید؟</p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button type="button" onClick={loadDraft} className="px-3 py-1.5 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600 transition-colors">
+                  ادامه
+                </button>
+                <button type="button" onClick={clearDraft} className="px-3 py-1.5 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">
+                  شروع جدید
+                </button>
+              </div>
+            </div>
+          )}
           {/* Personal Info */}
           <div>
             <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
@@ -342,11 +399,17 @@ export function VisaForm({ formType }: VisaFormProps) {
             {errors.legalDocs && <p className="text-xs text-red-500 mt-1">{errors.legalDocs}</p>}
           </div>
 
-          {/* Submit */}
-          <button type="submit" className="w-full bg-gold-400 hover:bg-gold-500 text-slate-900 font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow hover:shadow-lg">
-            <Send className="w-5 h-5" />
-            ارسال درخواست
-          </button>
+          {/* Submit Buttons */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button type="submit" className="flex-1 bg-gold-400 hover:bg-gold-500 text-slate-900 font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow hover:shadow-lg">
+              <Send className="w-5 h-5" />
+              ارسال درخواست
+            </button>
+            <button type="button" onClick={saveDraft} className="flex-1 sm:flex-none bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 font-bold py-4 px-6 rounded-xl flex items-center justify-center gap-2 transition-all border border-slate-300 dark:border-slate-600">
+              <Save className="w-5 h-5" />
+              ذخیره و ادامه بعدی
+            </button>
+          </div>
         </form>
       )}
 

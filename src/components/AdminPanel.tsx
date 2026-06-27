@@ -26,14 +26,28 @@ interface Service {
   id: string; title_fa: string; description: string; price: string; icon: string; is_active: string;
 }
 
+interface Appointment {
+  id: string; name: string; last_name: string; father_name: string;
+  phone: string; email: string; province: string; destination_country: string;
+  preferred_date: string; preferred_time: string; message: string;
+  status: string; created_at: string;
+}
+
+interface User {
+  id: string; name: string; email: string; phone: string;
+  role: string; is_active: string; created_at: string;
+}
+
 interface AdminPanelProps { onClose: () => void; }
 
-type AdminTab = 'applications' | 'services' | 'chatbot' | 'reviews' | 'emergency' | 'settings';
+type AdminTab = 'applications' | 'appointments' | 'services' | 'chatbot' | 'reviews' | 'emergency' | 'users' | 'successful_cases' | 'settings';
 
 const STATUS_CONFIG: Record<string, { label: string; cls: string }> = {
-  pending: { label: 'در انتظار', cls: 'bg-amber-100 text-amber-700' },
-  approved: { label: 'تأیید شده', cls: 'bg-emerald-100 text-emerald-700' },
-  rejected: { label: 'رد شده', cls: 'bg-red-100 text-red-700' },
+  pending: { label: 'در انتظار', cls: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
+  approved: { label: 'تأیید شده', cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' },
+  rejected: { label: 'رد شده', cls: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
+  confirmed: { label: 'تأیید شد', cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' },
+  cancelled: { label: 'لغو شد', cls: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
 };
 
 const FORM_LABELS: Record<string, string> = {
@@ -44,10 +58,13 @@ const FORM_LABELS: Record<string, string> = {
 export function AdminPanel({ onClose }: AdminPanelProps) {
   const [tab, setTab] = useState<AdminTab>('applications');
   const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [chatResponses, setChatResponses] = useState<ChatResponse[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [emergencies, setEmergencies] = useState<any[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [successfulCases, setSuccessfulCases] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
   const [search, setSearch] = useState('');
@@ -62,6 +79,11 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
       const subRes = await fetch(SHEETDB_API);
       const subData = await subRes.json();
       if (Array.isArray(subData)) setSubmissions(subData.reverse());
+
+      // Fetch appointments
+      const aptRes = await fetch(`${SHEETDB_API}?sheet=appointments`);
+      const aptData = await aptRes.json();
+      if (Array.isArray(aptData)) setAppointments(aptData.reverse());
 
       // Fetch emergencies
       const emgRes = await fetch(`${SHEETDB_API}?sheet=emergency`);
@@ -82,6 +104,16 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
       const svcRes = await fetch(`${SHEETDB_API}?sheet=services`);
       const svcData = await svcRes.json();
       if (Array.isArray(svcData)) setServices(svcData);
+
+      // Fetch users
+      const userRes = await fetch(`${SHEETDB_API}?sheet=users`);
+      const userData = await userRes.json();
+      if (Array.isArray(userData)) setUsers(userData);
+
+      // Fetch successful cases
+      const casesRes = await fetch(`${SHEETDB_API}?sheet=successful_cases`);
+      const casesData = await casesRes.json();
+      if (Array.isArray(casesData)) setSuccessfulCases(casesData);
     } catch (err) {
       console.error('Error fetching data:', err);
     }
@@ -163,6 +195,41 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
     } catch {}
   };
 
+  const addUser = async () => {
+    const newUser = { id: 'U-' + Date.now().toString(36).toUpperCase(), name: 'کاربر جدید', email: 'email@example.com', phone: '', role: 'customer', is_active: 'true', created_at: new Date().toISOString() };
+    try {
+      await fetch(SHEETDB_API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: [newUser], sheet: 'users' }),
+      });
+      fetchData();
+    } catch {}
+  };
+
+  const toggleUserStatus = async (id: string, is_active: string) => {
+    try {
+      await fetch(`${SHEETDB_API}/id/${id}?sheet=users`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: { is_active: is_active === 'true' ? 'false' : 'true' } }),
+      });
+      setUsers(prev => prev.map(u => u.id === id ? { ...u, is_active: is_active === 'true' ? 'false' : 'true' } : u));
+    } catch {}
+  };
+
+  const addSuccessfulCase = async () => {
+    const newCase = { id: 'SC-' + Date.now().toString(36).toUpperCase(), name: 'نام', last_name: 'نام خانوادگی', father_name: 'نام پدر', province: 'کابل', destination_country: 'آلمان', photo_url: '', approved: 'true' };
+    try {
+      await fetch(SHEETDB_API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: [newCase], sheet: 'successful_cases' }),
+      });
+      fetchData();
+    } catch {}
+  };
+
   const filtered = submissions.filter(s => {
     const matchSearch = `${s.first_name} ${s.last_name} ${s.passport_number} ${s.email}`.toLowerCase().includes(search.toLowerCase());
     const matchStatus = statusFilter === 'all' || s.status === statusFilter;
@@ -173,15 +240,21 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
     total: submissions.length,
     pending: submissions.filter(s => s.status === 'pending').length,
     approved: submissions.filter(s => s.status === 'approved').length,
+    appointments: appointments.filter(a => a.status === 'pending').length,
     emergency: emergencies.length,
     reviews: reviews.filter(r => r.approved !== 'true').length,
+    users: users.length,
+    successful: successfulCases.filter((c: any) => c.approved === 'true').length,
   };
 
   const TABS: [AdminTab, string, React.ReactNode][] = [
     ['applications', `درخواست‌ها (${stats.total})`, <FileText className="w-4 h-4" />],
+    ['appointments', `قرارها (${stats.appointments})`, <Clock className="w-4 h-4" />],
     ['services', 'خدمات', <Globe className="w-4 h-4" />],
     ['chatbot', 'چت‌بات', <Bot className="w-4 h-4" />],
     ['reviews', `نظرات (${stats.reviews})`, <Star className="w-4 h-4" />],
+    ['successful_cases', `پرونده‌ها (${stats.successful})`, <CheckCircle className="w-4 h-4" />],
+    ['users', `کاربران (${stats.users})`, <Users className="w-4 h-4" />],
     ['emergency', `اضطراری`, <AlertTriangle className="w-4 h-4" />],
     ['settings', 'تنظیمات', <Settings className="w-4 h-4" />],
   ];
@@ -283,6 +356,44 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
                           </tr>
                         )}
                       </React.Fragment>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )}
+
+        {/* Appointments Tab */}
+        {tab === 'appointments' && (
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow overflow-hidden">
+            <div className="p-4 border-b">
+              <h3 className="font-semibold">قرارهای ملاقات ({appointments.length})</h3>
+            </div>
+            {loading ? <div className="flex justify-center py-20"><div className="w-10 h-10 border-4 border-gold-400 rounded-full animate-spin" /></div> : (
+              <table className="w-full">
+                <thead className="bg-slate-50 dark:bg-slate-700">
+                  <tr>{['#', 'نام', 'تلفن', 'کشور', 'تاریخ', 'وضعیت', 'اقدام'].map(h => <th key={h} className="px-4 py-3 text-xs font-semibold text-slate-500 text-right">{h}</th>)}</tr>
+                </thead>
+                <tbody className="divide-y">
+                  {appointments.map((apt, idx) => {
+                    const st = STATUS_CONFIG[apt.status] || STATUS_CONFIG.pending;
+                    return (
+                      <tr key={apt.id} className="hover:bg-slate-50 dark:hover:bg-slate-700">
+                        <td className="px-4 py-3 text-sm text-slate-400">{idx + 1}</td>
+                        <td className="px-4 py-3"><p className="font-medium text-sm">{apt.name} {apt.last_name}</p><p className="text-xs text-slate-400">{apt.email}</p></td>
+                        <td className="px-4 py-3 text-sm font-mono">{apt.phone}</td>
+                        <td className="px-4 py-3 text-sm">{apt.destination_country}</td>
+                        <td className="px-4 py-3 text-sm">{apt.preferred_date || '—'}<br/><span className="text-xs text-slate-400">{apt.preferred_time}</span></td>
+                        <td className="px-4 py-3"><span className={`px-2 py-1 rounded-full text-xs ${st.cls}`}>{st.label}</span></td>
+                        <td className="px-4 py-3">
+                          <select value={apt.status} onChange={e => updateStatus(apt.id, e.target.value)} className="text-xs bg-slate-100 dark:bg-slate-700 border rounded-lg px-2 py-1">
+                            <option value="pending">در انتظار</option>
+                            <option value="confirmed">تأیید</option>
+                            <option value="cancelled">لغو</option>
+                          </select>
+                        </td>
+                      </tr>
                     );
                   })}
                 </tbody>
@@ -408,6 +519,76 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
                     <div className="text-left"><p className="text-sm font-mono">{e.phone}</p><p className="text-xs text-slate-400">{e.location}</p></div>
                   </div>
                   {e.description && <p className="text-sm text-slate-500 bg-red-50 dark:bg-red-900/10 p-3 rounded-lg">{e.description}</p>}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Users Tab */}
+        {tab === 'users' && (
+          <div className="space-y-4">
+            <div className="flex justify-end">
+              <button onClick={addUser} className="flex items-center gap-2 px-4 py-2 bg-gold-400 text-slate-900 font-medium rounded-lg"><Plus className="w-4 h-4" />افزودن کاربر</button>
+            </div>
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow overflow-hidden">
+              <table className="w-full">
+                <thead className="bg-slate-50 dark:bg-slate-700">
+                  <tr>{['نام', 'ایمیل', 'تلفن', 'نقش', 'وضعیت', 'اقدام'].map(h => <th key={h} className="px-4 py-3 text-xs font-semibold text-slate-500 text-right">{h}</th>)}</tr>
+                </thead>
+                <tbody className="divide-y">
+                  {users.map((u) => (
+                    <tr key={u.id} className="hover:bg-slate-50 dark:hover:bg-slate-700">
+                      <td className="px-4 py-3"><p className="font-medium text-sm">{u.name}</p></td>
+                      <td className="px-4 py-3 text-sm">{u.email}</td>
+                      <td className="px-4 py-3 text-sm font-mono">{u.phone || '—'}</td>
+                      <td className="px-4 py-3"><span className="text-xs px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-700">{u.role === 'admin' ? 'مدیر' : 'کاربر'}</span></td>
+                      <td className="px-4 py-3">
+                        <span className={`text-xs px-2 py-1 rounded-full ${u.is_active === 'true' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
+                          {u.is_active === 'true' ? 'فعال' : 'مسدود'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => toggleUserStatus(u.id, u.is_active)}
+                            className={`p-2 rounded-lg text-xs ${u.is_active === 'true' ? 'text-red-600 hover:bg-red-50' : 'text-emerald-600 hover:bg-emerald-50'}`}
+                          >
+                            {u.is_active === 'true' ? 'مسدود' : 'فعال‌سازی'}
+                          </button>
+                          <button onClick={() => deleteItem('users', u.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 className="w-4 h-4" /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Successful Cases Tab */}
+        {tab === 'successful_cases' && (
+          <div className="space-y-4">
+            <div className="flex justify-end">
+              <button onClick={addSuccessfulCase} className="flex items-center gap-2 px-4 py-2 bg-emerald-500 text-white font-medium rounded-lg"><Plus className="w-4 h-4" />افزودن پرونده</button>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {successfulCases.map((c: any) => (
+                <div key={c.id} className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow">
+                  <div className="flex items-start justify-between mb-3">
+                    <span className="text-3xl">{c.destination_country === 'آلمان' ? '🇩🇪' : c.destination_country === 'استرالیا' ? '🇦🇺' : c.destination_country === 'کانادا' ? '🇨🇦' : '🌍'}</span>
+                    <span className={`text-xs px-2 py-1 rounded-full ${c.approved === 'true' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-amber-100 text-amber-700'}`}>
+                      {c.approved === 'true' ? 'تأیید' : 'در انتظار'}
+                    </span>
+                  </div>
+                  <h4 className="font-bold mb-1">{c.name} {c.last_name}</h4>
+                  <p className="text-sm text-slate-500 mb-1">پدر: {c.father_name}</p>
+                  <p className="text-sm text-slate-500 mb-2">{c.province} → {c.destination_country}</p>
+                  <div className="flex gap-2">
+                    <button onClick={() => { setEditingId(c.id); setEditForm(c); }} className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg"><Edit className="w-4 h-4" /></button>
+                    <button onClick={() => deleteItem('successful_cases', c.id)} className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"><Trash2 className="w-4 h-4" /></button>
+                  </div>
                 </div>
               ))}
             </div>
