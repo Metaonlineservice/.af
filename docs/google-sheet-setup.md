@@ -4,9 +4,9 @@
 
 | Item | Value |
 |------|-------|
-| **SheetDB API** | `https://sheetdb.io/api/v1/aefcf2ew9qblp` |
-| **Google Sheet ID** | `1LVo84es1a3ayuv4Y-VGHUQ28JfhODunzjY7GcjKwhYA` |
-| **Google Sheet URL** | [Open Sheet](https://docs.google.com/spreadsheets/d/1LVo84es1a3ayuv4Y-VGHUQ28JfhODunzjY7GcjKwhYA/edit) |
+| **SheetDB API** | `https://sheetdb.io/api/v1/j92iddttd3260` |
+| **Google Sheet ID** | `12J6MajQek8zPPtx6roPR5EY2mP41GMYfgly-ZXOs4no` |
+| **Google Sheet URL** | [Open Sheet](https://docs.google.com/spreadsheets/d/12J6MajQek8zPPtx6roPR5EY2mP41GMYfgly-ZXOs4no/edit) |
 | **Google Drive Folder** | [Open Folder](https://drive.google.com/drive/folders/1pGKxBnC_f5lu08_IdMBVDo8p6QH93vdH) |
 
 ---
@@ -60,12 +60,12 @@ id	created_at	first_name	last_name	father_name	case_type	family_count	passport_n
 
 1. Go to https://sheetdb.io
 2. Login to your account
-3. You should see your API endpoint: `aefcf2ew9qblp`
+3. You should see your API endpoint: `j92iddttd3260`
 4. Click on it to verify it's connected to your Google Sheet
 
 If not connected:
 1. Click "Create New API"
-2. Paste your Google Sheet URL: `https://docs.google.com/spreadsheets/d/1LVo84es1a3ayuv4Y-VGHUQ28JfhODunzjY7GcjKwhYA/edit`
+2. Paste your Google Sheet URL: `https://docs.google.com/spreadsheets/d/12J6MajQek8zPPtx6roPR5EY2mP41GMYfgly-ZXOs4no/edit`
 3. SheetDB will generate a new API endpoint
 4. Update the code if a new endpoint is generated
 
@@ -88,7 +88,7 @@ The code is already configured with YOUR SheetDB API:
 
 ```typescript
 // In src/components/VisaForm.tsx (line 22)
-const SHEETDB_API_URL = 'https://sheetdb.io/api/v1/aefcf2ew9qblp';
+const SHEETDB_API_URL = 'https://sheetdb.io/api/v1/j92iddttd3260';
 ```
 
 **Just make sure your Google Sheet has the 28 column headers in Row 1!**

@@ -1,8 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Star, Quote } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
-
-const SHEETDB_API = 'https://sheetdb.io/api/v1/aefcf2ew9qblp';
+import { SHEETDB_API, SHEET_NAMES } from '../config/apiConfig';
 
 interface Review {
   id: string;
@@ -50,7 +49,7 @@ export function Reviews() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`${SHEETDB_API}?sheet=reviews`)
+    fetch(`${SHEETDB_API}?sheet=${SHEET_NAMES.REVIEWS}`)
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data) && data.length > 0) {

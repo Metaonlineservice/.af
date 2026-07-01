@@ -9,6 +9,35 @@
 
   body {
     @apply font-vazir antialiased;
+    font-feature-settings: "ss01", "ss02";
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Persian/Farsi numeral rendering */
+  [dir="rtl"] {
+    font-feature-settings: "ss01";
+  }
+
+  /* Persian number substitution */
+  .persian-num {
+    font-feature-settings: "ss01";
+  }
+
+  /* Improved RTL text handling */
+  [dir="rtl"] input,
+  [dir="rtl"] textarea,
+  [dir="rtl"] select {
+    text-align: right;
+    direction: rtl;
+  }
+
+  /* English text in RTL context */
+  .text-en {
+    direction: ltr;
+    text-align: left;
+    unicode-bidi: embed;
   }
 
   input[type="number"]::-webkit-inner-spin-button,
@@ -200,5 +229,41 @@
   @keyframes float {
     0%, 100% { transform: translateY(0); }
     50% { transform: translateY(-10px); }
+  }
+
+  .animate-spin-slow {
+    animation: spin 3s linear infinite;
+  }
+
+  .animate-pulse-soft {
+    animation: pulseSoft 2s ease-in-out infinite;
+  }
+
+  @keyframes pulseSoft {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+
+  /* Scroll to top on route change */
+  .scroll-reset {
+    scroll-behavior: auto;
+  }
+
+  /* Focus visible for accessibility */
+  .focus-visible-ring:focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+  }
+
+  /* Reduced motion for accessibility */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }

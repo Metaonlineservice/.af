@@ -1,7 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-
-const SHEETDB_API_URL = 'https://sheetdb.io/api/v1/aefcf2ew9qblp';
-const USERS_SHEET = 'users';
+import { SHEETDB_API, SHEET_NAMES, getApiUrl } from '../config/apiConfig';
 
 const ADMIN_EMAIL = 'farhadehsan507@gmail.com';
 const ADMIN_PASSWORD = '123456789';
@@ -70,8 +68,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     try {
       const res = await fetch(
-        `${SHEETDB_API_URL}/search?sheet=${USERS_SHEET}&email=${encodeURIComponent(email.toLowerCase())}`
+        `${getApiUrl()}/search?sheet=${SHEET_NAMES.USERS}&email=${encodeURIComponent(email.toLowerCase())}`
       );
+
+      if (!res.ok) {
+        return { success: false, error: 'خطا در اتصال. لطفاً دوباره تلاش کنید.' };
+      }
+
       const data = await res.json();
 
       if (!Array.isArray(data) || data.length === 0) {
@@ -104,8 +107,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       // Check if email exists
       const checkRes = await fetch(
-        `${SHEETDB_API_URL}/search?sheet=${USERS_SHEET}&email=${encodeURIComponent(data.email.toLowerCase())}`
+        `${getApiUrl()}/search?sheet=${SHEET_NAMES.USERS}&email=${encodeURIComponent(data.email.toLowerCase())}`
       );
+
+      if (!checkRes.ok) {
+        return { success: false, error: 'خطا در اتصال. لطفاً دوباره تلاش کنید.' };
+      }
+
       const existing = await checkRes.json();
       if (Array.isArray(existing) && existing.length > 0) {
         return { success: false, error: 'این ایمیل قبلاً ثبت شده است' };
@@ -122,11 +130,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         created_at: new Date().toISOString(),
       };
 
-      await fetch(SHEETDB_API_URL, {
+      const postRes = await fetch(`${getApiUrl()}?sheet=${SHEET_NAMES.USERS}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data: [newRecord], sheet: USERS_SHEET }),
+        body: JSON.stringify({ data: [newRecord] }),
       });
+
+      if (!postRes.ok) {
+        const errorText = await postRes.text();
+        console.error('SheetDB signup error:', postRes.status, errorText);
+        return { success: false, error: 'خطا در ثبت‌نام. لطفاً دوباره تلاش کنید.' };
+      }
+
+      const result = await postRes.json();
+      console.log('User registered:', result);
 
       const loggedUser: User = {
         id,
@@ -140,7 +157,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(loggedUser);
       localStorage.setItem('meta_user', JSON.stringify(loggedUser));
       return { success: true };
-    } catch {
+    } catch (err) {
+      console.error('Signup error:', err);
       return { success: false, error: 'خطا در ثبت‌نام. لطفاً دوباره تلاش کنید.' };
     }
   };

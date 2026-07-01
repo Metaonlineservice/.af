@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, User, Phone, Mail, MapPin, CheckCircle, Loader2, Save } from 'lucide-react';
+import { Calendar, Clock, User, Phone, Mail, MapPin, CheckCircle, Loader2, Save, Download } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
-
-const SHEETDB_API = 'https://sheetdb.io/api/v1/aefcf2ew9qblp';
+import { SHEETDB_API, SHEET_NAMES, PROVINCES, COUNTRIES, TIME_SLOTS, getApiUrl } from '../config/apiConfig';
+import { FormNotice } from './FormNotice';
+import { generateApplicationPDF } from '../utils/pdfGenerator';
 
 interface FormData {
   name: string;
@@ -30,10 +31,6 @@ const DEFAULT_FORM_DATA: FormData = {
   message: '',
 };
 
-const PROVINCES = ['کابل', 'هرات', 'بلخ', 'قندهار', 'ننگرهار', 'کندز', 'بامیان', 'پروان', 'غزنی', 'مزار شریف'];
-const COUNTRIES = ['آلمان', 'استرالیا', 'ایتالیا', 'سوئیس', 'فرانسه', 'کانادا', 'انگلیس', 'سایر'];
-const TIME_SLOTS = ['۸:۰۰ صبح', '۹:۰۰ صبح', '۱۰:۰۰ صبح', '۱۱:۰۰ صبح', '۱۲:۰۰ ظهر', '۱:۰۰ بعدازظهر', '۲:۰۰ بعدازظهر', '۳:۰۰ بعدازظهر', '۴:۰۰ بعدازظهر'];
-
 export function AppointmentForm() {
   const { t } = useLanguage();
   const [formData, setFormData] = useState<FormData>(() => {
@@ -45,6 +42,7 @@ export function AppointmentForm() {
   const [error, setError] = useState('');
   const [showSavedMsg, setShowSavedMsg] = useState(false);
   const [showSavedNotification, setShowSavedNotification] = useState(false);
+  const [submittedData, setSubmittedData] = useState<any>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem('appointment_form');
@@ -80,29 +78,51 @@ export function AppointmentForm() {
     setShowSavedMsg(false);
   };
 
+  const handleDownloadPDF = () => {
+    if (submittedData) {
+      generateApplicationPDF(submittedData);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
     try {
-      const response = await fetch(`${SHEETDB_API}?sheet=appointments`, {
+      const appointmentId = 'APT-' + Date.now().toString(36).toUpperCase();
+      const appointmentData = {
+        ...formData,
+        id: appointmentId,
+        status: 'pending',
+        created_at: new Date().toISOString(),
+        formType: 'appointment',
+      };
+
+      // Save to Google Sheets via SheetDB
+      const response = await fetch(`${getApiUrl()}?sheet=${SHEET_NAMES.APPOINTMENTS}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          data: [{
-            ...formData,
-            id: Date.now().toString(),
-            status: 'pending',
-            created_at: new Date().toISOString(),
-          }]
+          data: [appointmentData]
         })
       });
 
-      if (!response.ok) throw new Error('Failed to submit');
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('SheetDB error:', response.status, errorText);
+        throw new Error(`Server error: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('Appointment saved:', result);
+
+      // Store data for PDF download - only after confirmed save
+      setSubmittedData(appointmentData);
       localStorage.removeItem('appointment_form');
       setSuccess(true);
-    } catch {
+    } catch (err) {
+      console.error('Submission error:', err);
       setError('خطا در ثبت اطلاعات. لطفاً دوباره تلاش کنید.');
     } finally {
       setLoading(false);
@@ -111,47 +131,61 @@ export function AppointmentForm() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center p-4">
-        <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl p-8 max-w-md w-full text-center">
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-corporate-100 dark:from-navy-950 dark:to-navy-900 flex items-center justify-center p-4" dir="rtl">
+        <div className="bg-white dark:bg-navy-900 rounded-3xl shadow-2xl p-8 max-w-md w-full text-center">
           <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
             <CheckCircle className="w-10 h-10 text-emerald-500" />
           </div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">{t('formSubmitted')}</h2>
-          <p className="text-slate-600 dark:text-slate-400 mb-6">
+          <h2 className="text-2xl font-bold text-navy-900 dark:text-white mb-4">{t('formSubmitted')}</h2>
+          <p className="text-corporate-600 dark:text-corporate-400 mb-6">
             قرار ملاقات شما با موفقیت ثبت شد. تیم ما به زودی با شما تماس خواهند گرفت.
           </p>
           <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-4 mb-6">
             <p className="text-emerald-700 dark:text-emerald-400 text-sm font-medium">
-              شماره پیگیری: {Date.now().toString().slice(-8)}
+              شماره پیگیری: {submittedData?.id || Date.now().toString().slice(-8)}
             </p>
           </div>
-          <a
-            href="/"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl transition-all"
-          >
-            بازگشت به صفحه اصلی
-          </a>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <button
+              onClick={handleDownloadPDF}
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold rounded-xl transition-all shadow-lg hover:shadow-xl animate-pulse-soft"
+            >
+              <Download className="w-5 h-5" />
+              دانلود PDF
+            </button>
+            <a
+              href="/"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-navy-700 hover:bg-navy-800 text-white font-bold rounded-xl transition-all"
+            >
+              بازگشت به صفحه اصلی
+            </a>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 py-12 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-corporate-50 to-corporate-100 dark:from-navy-950 dark:to-navy-900 py-12 px-4" dir="rtl">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+          <div className="w-16 h-16 bg-gradient-to-br from-navy-600 to-navy-800 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
             <Calendar className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">{t('bookAppointment')}</h1>
-          <p className="text-slate-600 dark:text-slate-400">
+          <h1 className="text-3xl font-bold text-navy-900 dark:text-white mb-2">{t('bookAppointment')}</h1>
+          <p className="text-corporate-600 dark:text-corporate-400">
             برای دریافت وقت ملاقات، فرم زیر را تکمیل کنید
           </p>
         </div>
 
+        {/* Form Notice */}
+        <div className="mb-6">
+          <FormNotice />
+        </div>
+
         {/* Form */}
-        <form onSubmit={handleSubmit} className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl p-8 space-y-6">
+        <form onSubmit={handleSubmit} className="bg-white dark:bg-navy-900 rounded-3xl shadow-xl p-8 space-y-6">
           {error && (
             <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 rounded-xl p-4 text-sm">
               {error}
@@ -172,7 +206,7 @@ export function AppointmentForm() {
                 <button type="button" onClick={loadDraft} className="px-3 py-1.5 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600 transition-colors">
                   ادامه
                 </button>
-                <button type="button" onClick={clearDraft} className="px-3 py-1.5 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">
+                <button type="button" onClick={clearDraft} className="px-3 py-1.5 bg-corporate-200 dark:bg-navy-700 text-corporate-700 dark:text-corporate-300 text-sm rounded-lg hover:bg-corporate-300 dark:hover:bg-navy-600 transition-colors">
                   شروع جدید
                 </button>
               </div>
@@ -190,7 +224,7 @@ export function AppointmentForm() {
           {/* Personal Info */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              <label className="block text-sm font-medium text-corporate-700 dark:text-corporate-300 mb-2">
                 <User className="w-4 h-4 inline ml-1" />
                 {t('name')}
               </label>
@@ -200,12 +234,12 @@ export function AppointmentForm() {
                 value={formData.name}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 bg-corporate-50 dark:bg-navy-800 border border-corporate-200 dark:border-navy-700 rounded-xl text-navy-900 dark:text-white focus:ring-2 focus:ring-navy-500 focus:border-transparent transition-all"
                 placeholder="نام"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              <label className="block text-sm font-medium text-corporate-700 dark:text-corporate-300 mb-2">
                 {t('lastName')}
               </label>
               <input
@@ -214,7 +248,7 @@ export function AppointmentForm() {
                 value={formData.lastName}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 bg-corporate-50 dark:bg-navy-800 border border-corporate-200 dark:border-navy-700 rounded-xl text-navy-900 dark:text-white focus:ring-2 focus:ring-navy-500 focus:border-transparent transition-all"
                 placeholder="نام خانوادگی"
               />
             </div>
@@ -222,7 +256,7 @@ export function AppointmentForm() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              <label className="block text-sm font-medium text-corporate-700 dark:text-corporate-300 mb-2">
                 {t('fatherName')}
               </label>
               <input
@@ -231,12 +265,12 @@ export function AppointmentForm() {
                 value={formData.fatherName}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 bg-corporate-50 dark:bg-navy-800 border border-corporate-200 dark:border-navy-700 rounded-xl text-navy-900 dark:text-white focus:ring-2 focus:ring-navy-500 focus:border-transparent transition-all"
                 placeholder="نام پدر"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              <label className="block text-sm font-medium text-corporate-700 dark:text-corporate-300 mb-2">
                 <MapPin className="w-4 h-4 inline ml-1" />
                 {t('province')}
               </label>
@@ -245,7 +279,7 @@ export function AppointmentForm() {
                 value={formData.province}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 bg-corporate-50 dark:bg-navy-800 border border-corporate-200 dark:border-navy-700 rounded-xl text-navy-900 dark:text-white focus:ring-2 focus:ring-navy-500 focus:border-transparent transition-all"
               >
                 <option value="">انتخاب ولایت</option>
                 {PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
@@ -256,7 +290,7 @@ export function AppointmentForm() {
           {/* Contact Info */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              <label className="block text-sm font-medium text-corporate-700 dark:text-corporate-300 mb-2">
                 <Phone className="w-4 h-4 inline ml-1" />
                 {t('phone')}
               </label>
@@ -266,12 +300,12 @@ export function AppointmentForm() {
                 value={formData.phone}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 bg-corporate-50 dark:bg-navy-800 border border-corporate-200 dark:border-navy-700 rounded-xl text-navy-900 dark:text-white focus:ring-2 focus:ring-navy-500 focus:border-transparent transition-all"
                 placeholder="07XXXXXXXX"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              <label className="block text-sm font-medium text-corporate-700 dark:text-corporate-300 mb-2">
                 <Mail className="w-4 h-4 inline ml-1" />
                 {t('email')}
               </label>
@@ -280,35 +314,33 @@ export function AppointmentForm() {
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 bg-corporate-50 dark:bg-navy-800 border border-corporate-200 dark:border-navy-700 rounded-xl text-navy-900 dark:text-white focus:ring-2 focus:ring-navy-500 focus:border-transparent transition-all"
                 placeholder="example@email.com"
               />
             </div>
           </div>
 
           {/* Destination */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                {t('destination')}
-              </label>
-              <select
-                name="destination_country"
-                value={formData.destination_country}
-                onChange={handleChange}
-                required
-                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
-              >
-                <option value="">انتخاب کشور</option>
-                {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
-            </div>
+          <div>
+            <label className="block text-sm font-medium text-corporate-700 dark:text-corporate-300 mb-2">
+              {t('destination')}
+            </label>
+            <select
+              name="destination_country"
+              value={formData.destination_country}
+              onChange={handleChange}
+              required
+              className="w-full px-4 py-3 bg-corporate-50 dark:bg-navy-800 border border-corporate-200 dark:border-navy-700 rounded-xl text-navy-900 dark:text-white focus:ring-2 focus:ring-navy-500 focus:border-transparent transition-all"
+            >
+              <option value="">انتخاب کشور</option>
+              {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
           </div>
 
           {/* Date & Time */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              <label className="block text-sm font-medium text-corporate-700 dark:text-corporate-300 mb-2">
                 <Calendar className="w-4 h-4 inline ml-1" />
                 {t('date')}
               </label>
@@ -319,11 +351,11 @@ export function AppointmentForm() {
                 onChange={handleChange}
                 required
                 min={new Date().toISOString().split('T')[0]}
-                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 bg-corporate-50 dark:bg-navy-800 border border-corporate-200 dark:border-navy-700 rounded-xl text-navy-900 dark:text-white focus:ring-2 focus:ring-navy-500 focus:border-transparent transition-all"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              <label className="block text-sm font-medium text-corporate-700 dark:text-corporate-300 mb-2">
                 <Clock className="w-4 h-4 inline ml-1" />
                 {t('time')}
               </label>
@@ -332,7 +364,7 @@ export function AppointmentForm() {
                 value={formData.preferred_time}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 bg-corporate-50 dark:bg-navy-800 border border-corporate-200 dark:border-navy-700 rounded-xl text-navy-900 dark:text-white focus:ring-2 focus:ring-navy-500 focus:border-transparent transition-all"
               >
                 <option value="">انتخاب ساعت</option>
                 {TIME_SLOTS.map(t => <option key={t} value={t}>{t}</option>)}
@@ -342,7 +374,7 @@ export function AppointmentForm() {
 
           {/* Message */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            <label className="block text-sm font-medium text-corporate-700 dark:text-corporate-300 mb-2">
               {t('message')} (اختیاری)
             </label>
             <textarea
@@ -350,7 +382,7 @@ export function AppointmentForm() {
               value={formData.message}
               onChange={handleChange}
               rows={3}
-              className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all resize-none"
+              className="w-full px-4 py-3 bg-corporate-50 dark:bg-navy-800 border border-corporate-200 dark:border-navy-700 rounded-xl text-navy-900 dark:text-white focus:ring-2 focus:ring-navy-500 focus:border-transparent transition-all resize-none"
               placeholder="پیام یا توضیحات اضافی..."
             />
           </div>
@@ -360,7 +392,7 @@ export function AppointmentForm() {
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold py-4 rounded-xl transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="flex-1 bg-gradient-to-r from-navy-700 to-navy-800 hover:from-navy-800 hover:to-navy-900 text-white font-bold py-4 rounded-xl transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {loading ? (
                 <>
@@ -377,7 +409,7 @@ export function AppointmentForm() {
             <button
               type="button"
               onClick={saveDraft}
-              className="flex-1 sm:flex-none bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 font-bold py-4 px-6 rounded-xl flex items-center justify-center gap-2 transition-all border border-slate-300 dark:border-slate-600"
+              className="flex-1 sm:flex-none bg-corporate-100 dark:bg-navy-800 hover:bg-corporate-200 dark:hover:bg-navy-700 text-corporate-700 dark:text-corporate-300 font-bold py-4 px-6 rounded-xl flex items-center justify-center gap-2 transition-all border border-corporate-300 dark:border-navy-600"
             >
               <Save className="w-5 h-5" />
               ذخیره و ادامه بعدی

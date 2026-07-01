@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import {
   Shield, Users, FileText, RefreshCw, LogOut, Settings, Bot, Star,
   CheckCircle, Clock, XCircle, Eye, ChevronUp, Plus, Trash2, Edit, Save, X,
-  Send, AlertTriangle, Globe
+  Send, AlertTriangle, Globe, Check, Loader2, Database, Server
 } from 'lucide-react';
-
-const SHEETDB_API = 'https://sheetdb.io/api/v1/aefcf2ew9qblp';
+import { SHEETDB_API, SHEET_NAMES, getApiUrl } from '../config/apiConfig';
+import { getSettings, saveSettings, resetSettings, testApiConnection, AppSettings } from '../config/settings';
 
 interface Submission {
   id: string; created_at: string; first_name: string; last_name: string;
@@ -72,46 +72,52 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Record<string, any>>({});
 
+  // Settings state
+  const [settings, setSettingsState] = useState<AppSettings>(getSettings());
+  const [apiInput, setApiInput] = useState(settings.sheetdbApi);
+  const [testingApi, setTestingApi] = useState(false);
+  const [apiTestResult, setApiTestResult] = useState<{ success: boolean; message: string } | null>(null);
+
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch applications
-      const subRes = await fetch(SHEETDB_API);
+      // Fetch applications - from applications sheet
+      const subRes = await fetch(`${getApiUrl()}?sheet=${SHEET_NAMES.APPLICATIONS}`);
       const subData = await subRes.json();
       if (Array.isArray(subData)) setSubmissions(subData.reverse());
 
       // Fetch appointments
-      const aptRes = await fetch(`${SHEETDB_API}?sheet=appointments`);
+      const aptRes = await fetch(`${getApiUrl()}?sheet=${SHEET_NAMES.APPOINTMENTS}`);
       const aptData = await aptRes.json();
       if (Array.isArray(aptData)) setAppointments(aptData.reverse());
 
       // Fetch emergencies
-      const emgRes = await fetch(`${SHEETDB_API}?sheet=emergency`);
+      const emgRes = await fetch(`${getApiUrl()}?sheet=${SHEET_NAMES.EMERGENCY}`);
       const emgData = await emgRes.json();
       if (Array.isArray(emgData)) setEmergencies(emgData.reverse());
 
       // Fetch chatbot responses
-      const chatRes = await fetch(`${SHEETDB_API}?sheet=chatbot_responses`);
+      const chatRes = await fetch(`${getApiUrl()}?sheet=${SHEET_NAMES.CHATBOT}`);
       const chatData = await chatRes.json();
       if (Array.isArray(chatData)) setChatResponses(chatData);
 
       // Fetch reviews
-      const revRes = await fetch(`${SHEETDB_API}?sheet=reviews`);
+      const revRes = await fetch(`${getApiUrl()}?sheet=${SHEET_NAMES.REVIEWS}`);
       const revData = await revRes.json();
       if (Array.isArray(revData)) setReviews(revData);
 
       // Fetch services
-      const svcRes = await fetch(`${SHEETDB_API}?sheet=services`);
+      const svcRes = await fetch(`${getApiUrl()}?sheet=${SHEET_NAMES.SERVICES}`);
       const svcData = await svcRes.json();
       if (Array.isArray(svcData)) setServices(svcData);
 
       // Fetch users
-      const userRes = await fetch(`${SHEETDB_API}?sheet=users`);
+      const userRes = await fetch(`${getApiUrl()}?sheet=${SHEET_NAMES.USERS}`);
       const userData = await userRes.json();
       if (Array.isArray(userData)) setUsers(userData);
 
       // Fetch successful cases
-      const casesRes = await fetch(`${SHEETDB_API}?sheet=successful_cases`);
+      const casesRes = await fetch(`${getApiUrl()}?sheet=${SHEET_NAMES.SUCCESSFUL_CASES}`);
       const casesData = await casesRes.json();
       if (Array.isArray(casesData)) setSuccessfulCases(casesData);
     } catch (err) {
@@ -124,7 +130,7 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
 
   const updateStatus = async (id: string, status: string) => {
     try {
-      await fetch(`${SHEETDB_API}/id/${id}`, {
+      await fetch(`${getApiUrl()}/id/${id}?sheet=${SHEET_NAMES.APPLICATIONS}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ data: { status } }),
@@ -133,9 +139,20 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
     } catch {}
   };
 
+  const updateAppointmentStatus = async (id: string, status: string) => {
+    try {
+      await fetch(`${getApiUrl()}/id/${id}?sheet=${SHEET_NAMES.APPOINTMENTS}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: { status } }),
+      });
+      setAppointments(prev => prev.map(a => a.id === id ? { ...a, status } : a));
+    } catch {}
+  };
+
   const updateReview = async (id: string, approved: string) => {
     try {
-      await fetch(`${SHEETDB_API}/id/${id}`, {
+      await fetch(`${getApiUrl()}/id/${id}?sheet=${SHEET_NAMES.REVIEWS}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ data: { approved } }),
@@ -147,24 +164,29 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
   const deleteItem = async (sheet: string, id: string) => {
     if (!confirm('آیا مطمئن هستید؟')) return;
     try {
-      await fetch(`${SHEETDB_API}/id/${id}?sheet=${sheet}`, { method: 'DELETE' });
-      if (sheet === 'chatbot_responses') setChatResponses(c => c.filter(x => x.id !== id));
-      if (sheet === 'reviews') setReviews(r => r.filter(x => x.id !== id));
-      if (sheet === 'services') setServices(s => s.filter(x => x.id !== id));
+      const response = await fetch(`${getApiUrl()}/id/${id}?sheet=${sheet}`, { method: 'DELETE' });
+      if (response.ok) {
+        if (sheet === 'chatbot') setChatResponses(c => c.filter(x => x.id !== id));
+        if (sheet === 'reviews') setReviews(r => r.filter(x => x.id !== id));
+        if (sheet === 'services') setServices(s => s.filter(x => x.id !== id));
+        if (sheet === 'users') setUsers(u => u.filter(x => x.id !== id));
+      }
     } catch {}
   };
 
   const saveEdit = async (sheet: string) => {
     if (!editingId) return;
     try {
-      await fetch(`${SHEETDB_API}/id/${editingId}?sheet=${sheet}`, {
+      const response = await fetch(`${getApiUrl()}/id/${editingId}?sheet=${sheet}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ data: editForm }),
       });
-      fetchData();
-      setEditingId(null);
-      setEditForm({});
+      if (response.ok) {
+        fetchData();
+        setEditingId(null);
+        setEditForm({});
+      }
     } catch {}
   };
 
@@ -174,59 +196,70 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
   const addChatResponse = async () => {
     const newResp = { id: 'CR-' + Date.now().toString(36).toUpperCase(), keyword: 'کلمه‌کلیدی', response: 'پاسخ جدید', is_active: 'true' };
     try {
-      await fetch(SHEETDB_API, {
+      const response = await fetch(`${getApiUrl()}?sheet=${SHEET_NAMES.CHATBOT}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data: [newResp], sheet: 'chatbot_responses' }),
+        body: JSON.stringify({ data: [newResp] }),
       });
-      fetchData();
+      if (response.ok) {
+        setChatResponses(prev => [...prev, newResp]);
+      }
     } catch {}
   };
 
   const addService = async () => {
     const newSvc = { id: 'SV-' + Date.now().toString(36).toUpperCase(), title_fa: 'خدمات جدید', description: 'توضیحات', price: 'قیمت', icon: '🌍', is_active: 'true' };
     try {
-      await fetch(SHEETDB_API, {
+      const response = await fetch(`${getApiUrl()}?sheet=${SHEET_NAMES.SERVICES}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data: [newSvc], sheet: 'services' }),
+        body: JSON.stringify({ data: [newSvc] }),
       });
-      fetchData();
+      if (response.ok) {
+        setServices(prev => [...prev, newSvc]);
+      }
     } catch {}
   };
 
   const addUser = async () => {
     const newUser = { id: 'U-' + Date.now().toString(36).toUpperCase(), name: 'کاربر جدید', email: 'email@example.com', phone: '', role: 'customer', is_active: 'true', created_at: new Date().toISOString() };
     try {
-      await fetch(SHEETDB_API, {
+      const response = await fetch(`${getApiUrl()}?sheet=${SHEET_NAMES.USERS}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data: [newUser], sheet: 'users' }),
+        body: JSON.stringify({ data: [newUser] }),
       });
-      fetchData();
+      if (response.ok) {
+        setUsers(prev => [...prev, newUser]);
+      }
     } catch {}
   };
 
   const toggleUserStatus = async (id: string, is_active: string) => {
     try {
-      await fetch(`${SHEETDB_API}/id/${id}?sheet=users`, {
+      const newStatus = is_active === 'true' ? 'false' : 'true';
+      const response = await fetch(`${getApiUrl()}/id/${id}?sheet=${SHEET_NAMES.USERS}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data: { is_active: is_active === 'true' ? 'false' : 'true' } }),
+        body: JSON.stringify({ data: { is_active: newStatus } }),
       });
-      setUsers(prev => prev.map(u => u.id === id ? { ...u, is_active: is_active === 'true' ? 'false' : 'true' } : u));
+      if (response.ok) {
+        setUsers(prev => prev.map(u => u.id === id ? { ...u, is_active: newStatus } : u));
+      }
     } catch {}
   };
 
   const addSuccessfulCase = async () => {
     const newCase = { id: 'SC-' + Date.now().toString(36).toUpperCase(), name: 'نام', last_name: 'نام خانوادگی', father_name: 'نام پدر', province: 'کابل', destination_country: 'آلمان', photo_url: '', approved: 'true' };
     try {
-      await fetch(SHEETDB_API, {
+      const response = await fetch(`${getApiUrl()}?sheet=${SHEET_NAMES.SUCCESSFUL_CASES}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data: [newCase], sheet: 'successful_cases' }),
+        body: JSON.stringify({ data: [newCase] }),
       });
-      fetchData();
+      if (response.ok) {
+        setSuccessfulCases(prev => [...prev, newCase]);
+      }
     } catch {}
   };
 
@@ -387,7 +420,7 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
                         <td className="px-4 py-3 text-sm">{apt.preferred_date || '—'}<br/><span className="text-xs text-slate-400">{apt.preferred_time}</span></td>
                         <td className="px-4 py-3"><span className={`px-2 py-1 rounded-full text-xs ${st.cls}`}>{st.label}</span></td>
                         <td className="px-4 py-3">
-                          <select value={apt.status} onChange={e => updateStatus(apt.id, e.target.value)} className="text-xs bg-slate-100 dark:bg-slate-700 border rounded-lg px-2 py-1">
+                          <select value={apt.status} onChange={e => updateAppointmentStatus(apt.id, e.target.value)} className="text-xs bg-slate-100 dark:bg-slate-700 border rounded-lg px-2 py-1">
                             <option value="pending">در انتظار</option>
                             <option value="confirmed">تأیید</option>
                             <option value="cancelled">لغو</option>
@@ -465,9 +498,9 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
                       <td className="px-4 py-3">
                         <div className="flex gap-2">
                           {editingId === c.id ? (
-                            <><button onClick={() => saveEdit('chatbot_responses')} className="p-2 text-emerald-600"><Save className="w-4 h-4" /></button><button onClick={cancelEdit} className="p-2 text-slate-500"><X className="w-4 h-4" /></button></>
+                            <><button onClick={() => saveEdit('chatbot')} className="p-2 text-emerald-600"><Save className="w-4 h-4" /></button><button onClick={cancelEdit} className="p-2 text-slate-500"><X className="w-4 h-4" /></button></>
                           ) : (
-                            <><button onClick={() => startEdit(c)} className="p-2 text-blue-600"><Edit className="w-4 h-4" /></button><button onClick={() => deleteItem('chatbot_responses', c.id)} className="p-2 text-red-600"><Trash2 className="w-4 h-4" /></button></>
+                            <><button onClick={() => startEdit(c)} className="p-2 text-blue-600"><Edit className="w-4 h-4" /></button><button onClick={() => deleteItem('chatbot', c.id)} className="p-2 text-red-600"><Trash2 className="w-4 h-4" /></button></>
                           )}
                         </div>
                       </td>
@@ -597,16 +630,129 @@ export function AdminPanel({ onClose }: AdminPanelProps) {
 
         {/* Settings Tab */}
         {tab === 'settings' && (
-          <div className="bg-white dark:bg-slate-800 rounded-xl shadow p-6">
-            <h3 className="font-semibold mb-6">اطلاعات تماس</h3>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="flex items-center gap-3 p-4 bg-slate-50 dark:bg-slate-700 rounded-xl">
-                <div className="p-2 bg-gold-400/10 rounded-lg text-gold-400"><Send className="w-4 h-4" /></div>
-                <div><p className="text-xs text-slate-500">واتساپ</p><p className="font-medium">+989012055578</p></div>
+          <div className="space-y-6">
+            {/* API Configuration */}
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-gold-400/10 rounded-lg"><Server className="w-5 h-5 text-gold-400" /></div>
+                <div>
+                  <h3 className="font-semibold">تنظیمات API</h3>
+                  <p className="text-xs text-slate-500">تنظیم آدرس SheetDB API</p>
+                </div>
               </div>
-              <div className="flex items-center gap-3 p-4 bg-slate-50 dark:bg-slate-700 rounded-xl">
-                <div className="p-2 bg-gold-400/10 rounded-lg text-gold-400"><Globe className="w-4 h-4" /></div>
-                <div><p className="text-xs text-slate-500">آدرس</p><p className="font-medium">کابل، افغانستان</p></div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                    آدرس SheetDB API
+                  </label>
+                  <input
+                    type="text"
+                    value={apiInput}
+                    onChange={(e) => setApiInput(e.target.value)}
+                    placeholder="https://sheetdb.io/api/v1/xxxxx"
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-sm font-mono text-slate-900 dark:text-white focus:ring-2 focus:ring-gold-400 focus:border-transparent"
+                    dir="ltr"
+                  />
+                </div>
+
+                {apiTestResult && (
+                  <div className={`flex items-center gap-2 p-4 rounded-xl ${apiTestResult.success ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400' : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400'}`}>
+                    {apiTestResult.success ? <Check className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
+                    <span className="text-sm">{apiTestResult.message}</span>
+                  </div>
+                )}
+
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    onClick={async () => {
+                      setTestingApi(true);
+                      setApiTestResult(null);
+                      const result = await testApiConnection(apiInput);
+                      setApiTestResult(result);
+                      setTestingApi(false);
+                    }}
+                    disabled={testingApi || !apiInput}
+                    className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                  >
+                    {testingApi ? <Loader2 className="w-4 h-4 animate-spin" /> : <Database className="w-4 h-4" />}
+                    تست اتصال
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      const updated = saveSettings({ sheetdbApi: apiInput });
+                      setSettingsState(updated);
+                      setApiTestResult({ success: true, message: 'تنظیمات ذخیره شد!' });
+                    }}
+                    disabled={!apiInput}
+                    className="flex items-center gap-2 px-4 py-2 bg-gold-400 hover:bg-gold-500 text-slate-900 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                  >
+                    <Save className="w-4 h-4" />
+                    ذخیره تنظیمات
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      const updated = resetSettings();
+                      setSettingsState(updated);
+                      setApiInput(updated.sheetdbApi);
+                      setApiTestResult({ success: true, message: 'تنظیمات پیش‌فرض بازیابی شد' });
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    بازیابی پیش‌فرض
+                  </button>
+                </div>
+
+                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
+                  <p className="text-sm text-blue-700 dark:text-blue-300">
+                    آخرین بروزرسانی: {new Date(settings.lastUpdated).toLocaleString('fa-IR')}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Sheet Names Configuration */}
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-emerald-400/10 rounded-lg"><Database className="w-5 h-5 text-emerald-400" /></div>
+                <div>
+                  <h3 className="font-semibold">نام شیت‌ها</h3>
+                  <p className="text-xs text-slate-500">نام تب‌های گوگل شیت</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {Object.entries(settings.sheetNames).map(([key, value]) => (
+                  <div key={key} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700 rounded-lg">
+                    <span className="text-xs text-slate-500">{key}</span>
+                    <span className="text-sm font-mono font-medium text-slate-700 dark:text-slate-300">{value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Contact Information */}
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-blue-400/10 rounded-lg"><Globe className="w-5 h-5 text-blue-400" /></div>
+                <div>
+                  <h3 className="font-semibold">اطلاعات تماس</h3>
+                  <p className="text-xs text-slate-500">اطلاعات تماس در محیط کاربری</p>
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="flex items-center gap-3 p-4 bg-slate-50 dark:bg-slate-700 rounded-xl">
+                  <div className="p-2 bg-gold-400/10 rounded-lg text-gold-400"><Send className="w-4 h-4" /></div>
+                  <div><p className="text-xs text-slate-500">واتساپ</p><p className="font-medium">+93730556547</p></div>
+                </div>
+                <div className="flex items-center gap-3 p-4 bg-slate-50 dark:bg-slate-700 rounded-xl">
+                  <div className="p-2 bg-gold-400/10 rounded-lg text-gold-400"><Globe className="w-4 h-4" /></div>
+                  <div><p className="text-xs text-slate-500">آدرس</p><p className="font-medium">کابل، افغانستان</p></div>
+                </div>
               </div>
             </div>
           </div>

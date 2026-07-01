@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { Menu, Moon, Sun, Shield, AlertTriangle, ChevronDown, Globe, Check } from 'lucide-react';
+import { Menu, Moon, Sun, Shield, AlertTriangle, ChevronDown, Globe, Check, Home, ChevronUp } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage, Language } from '../contexts/LanguageContext';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { CONTACT_INFO, VISA_FORM_TYPES } from '../config/apiConfig';
 
 const WhatsAppIcon = () => (
   <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
@@ -37,18 +39,88 @@ export function Header({ onMenuClick, onEmergencyClick, onAppointmentClick }: He
   const { theme, toggleTheme } = useTheme();
   const { language, setLanguage, t } = useLanguage();
   const [langDropdownOpen, setLangDropdownOpen] = useState(false);
+  const [servicesDropdownOpen, setServicesDropdownOpen] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleServiceClick = (formId: string) => {
+    navigate(`/form/${formId}`);
+    setServicesDropdownOpen(false);
+  };
 
   return (
     <header className="fixed top-0 right-0 left-0 z-50 bg-white/95 dark:bg-navy-950/95 backdrop-blur-md border-b border-corporate-200 dark:border-navy-800/70 transition-all duration-300 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-14">
           {/* Logo */}
-          <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-            <img src="/logo.png" alt="Meta Online Service" className="h-8 w-auto object-contain drop-shadow-sm" />
+          <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => navigate('/')}>
+            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-700 flex items-center justify-center shadow-md">
+              <svg viewBox="0 0 100 100" className="w-5 h-5">
+                <path d="M20 75 L20 25 L35 50 L50 25 L65 50 L80 25 L80 75" fill="none" stroke="white" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
             <div className="hidden sm:block">
               <h1 className="text-sm font-bold text-navy-900 dark:text-white leading-tight">{t('siteName')}</h1>
               <p className="text-[10px] text-corporate-500 leading-tight">Meta Online Service</p>
             </div>
+          </div>
+
+          {/* Center - Navigation */}
+          <div className="hidden md:flex items-center gap-1">
+            {/* Home Button */}
+            <button
+              onClick={() => navigate('/')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                location.pathname === '/'
+                  ? 'bg-navy-100 dark:bg-navy-800 text-navy-700 dark:text-navy-200'
+                  : 'text-corporate-600 dark:text-corporate-400 hover:bg-corporate-50 dark:hover:bg-navy-800/50'
+              }`}
+            >
+              <Home className="w-4 h-4" />
+              <span>{t('home')}</span>
+            </button>
+
+            {/* Services Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setServicesDropdownOpen(!servicesDropdownOpen)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                  location.pathname.includes('/form/')
+                    ? 'bg-navy-100 dark:bg-navy-800 text-navy-700 dark:text-navy-200'
+                    : 'text-corporate-600 dark:text-corporate-400 hover:bg-corporate-50 dark:hover:bg-navy-800/50'
+                }`}
+              >
+                <Globe className="w-4 h-4" />
+                <span>{t('services')}</span>
+                {servicesDropdownOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+              </button>
+
+              {servicesDropdownOpen && (
+                <>
+                  <div className="fixed inset-0 z-[-1]" onClick={() => setServicesDropdownOpen(false)} />
+                  <div className="absolute top-full right-0 mt-2 bg-white dark:bg-navy-900 rounded-xl shadow-xl border border-corporate-200 dark:border-navy-700 overflow-hidden min-w-[180px] animate-slide-down">
+                    {VISA_FORM_TYPES.map(service => (
+                      <button
+                        key={service.id}
+                        onClick={() => handleServiceClick(service.id)}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-corporate-50 dark:hover:bg-navy-800 transition-colors text-navy-700 dark:text-corporate-200"
+                      >
+                        <span className="text-lg">{service.icon}</span>
+                        <span>{service.titleFa}</span>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Appointment Button */}
+            <button
+              onClick={onAppointmentClick}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-navy-700 hover:bg-navy-800 text-white text-sm font-medium rounded-lg transition-all"
+            >
+              {t('bookAppointment')}
+            </button>
           </div>
 
           {/* Actions */}
@@ -58,7 +130,7 @@ export function Header({ onMenuClick, onEmergencyClick, onAppointmentClick }: He
               href="https://www.facebook.com/profile.php?id=61591311924456"
               target="_blank"
               rel="noopener noreferrer"
-              className="p-2 rounded-lg text-blue-600 hover:bg-blue-50 dark:hover:bg-navy-800/50 transition-all duration-300 hover:scale-110"
+              className="hidden sm:flex p-2 rounded-lg text-blue-600 hover:bg-blue-50 dark:hover:bg-navy-800/50 transition-all duration-300 hover:scale-110"
               title="Facebook"
             >
               <FacebookIcon />
@@ -69,7 +141,7 @@ export function Header({ onMenuClick, onEmergencyClick, onAppointmentClick }: He
               href="https://www.instagram.com/meta_online_service/#"
               target="_blank"
               rel="noopener noreferrer"
-              className="p-2 rounded-lg text-pink-500 hover:bg-pink-50 dark:hover:bg-navy-800/50 transition-all duration-300 hover:scale-110"
+              className="hidden sm:flex p-2 rounded-lg text-pink-500 hover:bg-pink-50 dark:hover:bg-navy-800/50 transition-all duration-300 hover:scale-110"
               title="Instagram"
             >
               <InstagramIcon />
@@ -77,7 +149,7 @@ export function Header({ onMenuClick, onEmergencyClick, onAppointmentClick }: He
 
             {/* WhatsApp - animated */}
             <a
-              href="https://wa.me/989012055578"
+              href={CONTACT_INFO.whatsappUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="p-2 rounded-lg text-emerald-500 hover:bg-emerald-50 dark:hover:bg-navy-800/50 transition-all animate-zoom-pulse"
@@ -135,7 +207,7 @@ export function Header({ onMenuClick, onEmergencyClick, onAppointmentClick }: He
             {/* Admin link - with green online indicator */}
             <a
               href="/admin"
-              className="relative flex items-center gap-1.5 px-3 py-1.5 border border-corporate-300 dark:border-navy-600 hover:bg-corporate-100 dark:hover:bg-navy-800 text-navy-700 dark:text-corporate-300 text-sm font-semibold rounded-lg transition-all"
+              className="relative hidden sm:flex items-center gap-1.5 px-3 py-1.5 border border-corporate-300 dark:border-navy-600 hover:bg-corporate-100 dark:hover:bg-navy-800 text-navy-700 dark:text-corporate-300 text-sm font-semibold rounded-lg transition-all"
             >
               {/* Green online indicator */}
               <span className="relative flex h-2.5 w-2.5">
@@ -143,7 +215,7 @@ export function Header({ onMenuClick, onEmergencyClick, onAppointmentClick }: He
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
               </span>
               <Shield className="w-4 h-4" />
-              <span className="hidden sm:inline">{t('admin')}</span>
+              <span>{t('admin')}</span>
             </a>
 
             {/* Menu */}
@@ -157,7 +229,7 @@ export function Header({ onMenuClick, onEmergencyClick, onAppointmentClick }: He
         </div>
       </div>
 
-      {/* Click outside to close language dropdown */}
+      {/* Click outside to close dropdowns */}
       {langDropdownOpen && (
         <div className="fixed inset-0 z-[-1]" onClick={() => setLangDropdownOpen(false)} />
       )}

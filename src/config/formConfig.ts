@@ -1,12 +1,5 @@
-// EmailJS Configuration
-export const EMAILJS_CONFIG = {
-  serviceId: 'service_qogogdp',
-  templateId: 'template_7y36m2h',
-  publicKey: 'GeH0jc48LNtGn4dsi',
-};
-
-// SheetDB API Configuration
-export const SHEETDB_API = 'https://sheetdb.io/api/v1/pra0bquhmf8fk';
+// Re-export from unified apiConfig
+export { SHEETDB_API } from './apiConfig';
 
 // Form Storage Key
 export const FORM_STORAGE_KEY = 'multistep_form_data';

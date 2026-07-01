@@ -1,6 +1,7 @@
 import React from 'react';
-import { Mail, MapPin, Phone, ChevronUp, Facebook, Instagram, ExternalLink } from 'lucide-react';
+import { Mail, MapPin, Phone, ChevronUp, ExternalLink } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { CONTACT_INFO } from '../config/apiConfig';
 
 const WhatsAppIcon = () => (
   <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
@@ -65,7 +66,7 @@ export function Footer({ onEmergencyClick }: FooterProps) {
             {/* Social Links */}
             <div className="flex flex-wrap gap-3">
               <a
-                href="https://wa.me/989012055578"
+                href={CONTACT_INFO.whatsappUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all duration-300"
@@ -125,40 +126,47 @@ export function Footer({ onEmergencyClick }: FooterProps) {
           <div>
             <h4 className="font-semibold text-lg mb-5 text-navy-300">{t('contact')}</h4>
             <ul className="space-y-4">
-              <li className="flex items-start gap-3">
-                <MapPin className="w-5 h-5 text-navy-400 flex-shrink-0 mt-0.5" />
-                <span className="text-corporate-400 text-sm">کابل، افغانستان<br />شار-e-Naw، عطف بازار</span>
+              <li>
+                <a
+                  href={CONTACT_INFO.googleMapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-start gap-3 text-corporate-400 hover:text-emerald-400 transition-colors text-sm group"
+                >
+                  <MapPin className="w-5 h-5 text-navy-400 flex-shrink-0 mt-0.5 group-hover:text-emerald-400 transition-colors" />
+                  <span className="leading-relaxed">{CONTACT_INFO.address}</span>
+                </a>
               </li>
               <li>
                 <a
-                  href="tel:+93730556547"
+                  href={`tel:${CONTACT_INFO.phone}`}
                   className="flex items-center gap-3 text-slate-400 hover:text-emerald-400 transition-colors text-sm"
                 >
                   <Phone className="w-5 h-5 text-navy-400 flex-shrink-0" />
                   <span className="flex items-center gap-2" dir="ltr">
-                    +93 730 556 547
+                    {CONTACT_INFO.phone}
                     <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-xs rounded-full">تماس</span>
                   </span>
                 </a>
               </li>
               <li>
                 <a
-                  href="https://wa.me/989012055578"
+                  href={CONTACT_INFO.whatsappUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-3 text-corporate-400 hover:text-emerald-400 transition-colors text-sm"
                 >
                   <WhatsAppIcon />
-                  <span dir="ltr">+98 901 205 5578</span>
+                  <span dir="ltr">{CONTACT_INFO.whatsapp}</span>
                 </a>
               </li>
               <li>
                 <a
-                  href="mailto:metaonlineservice3@gmail.com"
+                  href={`mailto:${CONTACT_INFO.email}`}
                   className="flex items-center gap-3 text-corporate-400 hover:text-navy-300 transition-colors text-sm"
                 >
                   <Mail className="w-5 h-5 text-navy-400 flex-shrink-0" />
-                  <span>metaonlineservice3@gmail.com</span>
+                  <span>{CONTACT_INFO.email}</span>
                 </a>
               </li>
             </ul>

@@ -4,9 +4,7 @@ import {
   RefreshCw, ChevronDown, ChevronUp, TrendingUp, Mail
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
-
-const SHEETDB_API_URL = 'https://sheetdb.io/api/v1/aefcf2ew9qblp';
+import { SHEETDB_API, SHEET_NAMES } from '../config/apiConfig';
 
 interface Application {
   id: string;
@@ -64,28 +62,18 @@ export function UserDashboard({ onClose }: Props) {
     if (!user) return;
     setLoading(true);
 
-    const [appRes, msgRes] = await Promise.all([
-      fetch(`${SHEETDB_API_URL}/search?email=${encodeURIComponent(user.email)}`),
-      supabase
-        .from('messages')
-        .select('*')
-        .or(`recipient_email.eq.${user.email},is_broadcast.eq.true`)
-        .order('created_at', { ascending: false }),
-    ]);
-
     try {
+      const appRes = await fetch(`${SHEETDB_API}/search?sheet=${SHEET_NAMES.APPLICATIONS}&email=${encodeURIComponent(user.email)}`);
       const apps = await appRes.json();
       if (Array.isArray(apps)) setApplications(apps.reverse());
     } catch {}
 
-    if (msgRes.data) setMessages(msgRes.data);
     setLoading(false);
   };
 
   useEffect(() => { fetchData(); }, [user]);
 
-  const markRead = async (id: string) => {
-    await supabase.from('messages').update({ is_read: true }).eq('id', id);
+  const markRead = (id: string) => {
     setMessages(prev => prev.map(m => m.id === id ? { ...m, is_read: true } : m));
   };
 

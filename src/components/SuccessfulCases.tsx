@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Award, Users, ChevronDown, X } from 'lucide-react';
+import { Award, X, MapPin } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
-
-const SHEETDB_API = 'https://sheetdb.io/api/v1/aefcf2ew9qblp';
+import { SHEETDB_API, SHEET_NAMES } from '../config/apiConfig';
 
 interface SuccessfulCase {
   id: string;
@@ -73,7 +72,7 @@ export function SuccessfulCases() {
   const [cases, setCases] = useState<SuccessfulCase[]>([]);
 
   useEffect(() => {
-    fetch(`${SHEETDB_API}?sheet=successful_cases`)
+    fetch(`${SHEETDB_API}?sheet=${SHEET_NAMES.SUCCESSFUL_CASES}`)
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data) && data.length > 0) {
@@ -92,30 +91,78 @@ export function SuccessfulCases() {
       });
   }, []);
 
-  // Auto-scrolling display
-  const displayCases = cases.length > 0 ? [...cases, ...cases] : [];
-
   return (
     <>
-      {/* Trigger Button shown in Services section */}
-      <div className="text-center mt-10">
-        <button
-          onClick={() => setIsOpen(true)}
-          className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-        >
-          <Award className="w-6 h-6" />
-          <span>{t('successfulCases')}</span>
-          <ChevronDown className="w-5 h-5 animate-bounce" />
-          <span className="bg-white/20 px-2 py-1 rounded-lg text-sm">{cases.length}+</span>
-        </button>
-      </div>
+      <section className="py-16 bg-corporate-50 dark:bg-navy-950">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="text-center mb-10">
+            <span className="inline-flex items-center gap-2 px-4 py-2 bg-amber-100 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-full text-amber-700 dark:text-amber-400 text-sm font-medium mb-4">
+              <Award className="w-4 h-4" />
+              پرونده‌های موفق
+            </span>
+            <h2 className="text-2xl md:text-3xl font-bold text-navy-900 dark:text-white mb-3">
+              {t('successfulCases')}
+            </h2>
+            <p className="text-corporate-500 dark:text-corporate-400">
+              پرونده‌هایی که با موفقیت به نتیجه رسیده‌اند
+            </p>
+          </div>
+
+          {/* Modern Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
+            {cases.slice(0, 8).map((c, i) => (
+              <div
+                key={c.id}
+                className="bg-white dark:bg-navy-900 rounded-xl p-4 border border-corporate-100 dark:border-navy-800 hover:border-amber-300 dark:hover:border-amber-600 transition-all duration-300 hover:shadow-lg animate-slide-up"
+                style={{ animationDelay: `${i * 50}ms` }}
+              >
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white font-bold overflow-hidden flex-shrink-0">
+                    {c.photo_url ? (
+                      <img src={c.photo_url} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      c.name.charAt(0)
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-navy-900 dark:text-white text-sm truncate">
+                      {c.name} {c.last_name}
+                    </p>
+                    <p className="text-xs text-corporate-500 dark:text-corporate-400 flex items-center gap-1">
+                      <MapPin className="w-3 h-3" />
+                      {c.province}
+                    </p>
+                  </div>
+                  <span className="text-2xl">{COUNTRY_FLAGS[c.destination_country] || '🌍'}</span>
+                </div>
+                <div className="flex items-center justify-between pt-2 border-t border-corporate-100 dark:border-navy-800">
+                  <span className="text-xs text-navy-600 dark:text-navy-400 font-medium">{c.destination_country}</span>
+                  <span className="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded text-xs font-bold">تایید</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {cases.length > 8 && (
+            <div className="text-center">
+              <button
+                onClick={() => setIsOpen(true)}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+              >
+                <Award className="w-5 h-5" />
+                مشاهده همه {cases.length} پرونده
+              </button>
+            </div>
+          )}
+        </div>
+      </section>
 
       {/* Modal */}
       {isOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="relative w-full max-w-4xl max-h-[90vh] bg-white dark:bg-slate-800 rounded-3xl shadow-2xl overflow-hidden animate-scale-in">
+          <div className="relative w-full max-w-6xl max-h-[90vh] bg-white dark:bg-navy-900 rounded-3xl shadow-2xl overflow-hidden animate-scale-in">
             {/* Header */}
-            <div className="sticky top-0 z-10 bg-gradient-to-r from-amber-500 to-amber-600 p-6 text-white">
+            <div className="sticky top-0 z-10 bg-gradient-to-l from-amber-500 to-amber-600 p-6 text-white">
               <button
                 onClick={() => setIsOpen(false)}
                 className="absolute top-4 left-4 p-2 bg-white/20 hover:bg-white/30 rounded-xl transition-colors"
@@ -131,75 +178,42 @@ export function SuccessfulCases() {
               </div>
             </div>
 
-            {/* Scrolling List */}
-            <div className="h-[60vh] overflow-hidden relative">
-              {/* Fade edges */}
-              <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-white dark:from-slate-800 to-transparent z-10 pointer-events-none" />
-              <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white dark:from-slate-800 to-transparent z-10 pointer-events-none" />
-
-              <div
-                className="animate-scroll-vertical px-6 py-4 space-y-3"
-                style={{
-                  animation: 'scrollVertical 30s linear infinite',
-                }}
-              >
-                {displayCases.map((c, i) => (
+            {/* Grid */}
+            <div className="h-[70vh] overflow-y-auto p-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {cases.map((c, i) => (
                   <div
                     key={`${c.id}-${i}`}
-                    className="flex items-center gap-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 border border-slate-200 dark:border-slate-600 hover:border-amber-300 dark:hover:border-amber-600 transition-colors"
+                    className="bg-corporate-50 dark:bg-navy-800 rounded-xl p-4 border border-corporate-200 dark:border-navy-700 hover:border-amber-400 dark:hover:border-amber-500 transition-all duration-300"
                   >
-                    {/* Photo or Avatar */}
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white font-bold text-lg flex-shrink-0 overflow-hidden">
-                      {c.photo_url ? (
-                        <img src={c.photo_url} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        c.name.charAt(0)
-                      )}
-                    </div>
-
-                    {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <p className="font-bold text-slate-900 dark:text-white">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white font-bold overflow-hidden flex-shrink-0">
+                        {c.photo_url ? (
+                          <img src={c.photo_url} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          c.name.charAt(0)
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-navy-900 dark:text-white text-sm truncate">
                           {c.name} {c.last_name}
                         </p>
-                        <span className="text-sm">
-                          {COUNTRY_FLAGS[c.destination_country] || '🌍'}
-                        </span>
-                      </div>
-                      <div className="flex flex-wrap gap-2 text-xs text-slate-500 dark:text-slate-400">
-                        <span>پدر: {c.father_name}</span>
-                        <span className="text-slate-300 dark:text-slate-600">|</span>
-                        <span>{c.province}</span>
-                        <span className="text-slate-300 dark:text-slate-600">|</span>
-                        <span className="text-emerald-600 dark:text-emerald-400 font-medium">{c.destination_country}</span>
+                        <p className="text-xs text-corporate-500 dark:text-corporate-400">پدر: {c.father_name}</p>
                       </div>
                     </div>
-
-                    {/* Success Badge */}
-                    <div className="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 px-3 py-1 rounded-lg text-xs font-bold flex-shrink-0">
-                      تایید شده
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-corporate-600 dark:text-corporate-400">{c.province}</span>
+                      <span className="text-lg">{COUNTRY_FLAGS[c.destination_country] || '🌍'}</span>
+                    </div>
+                    <div className="mt-2 pt-2 border-t border-corporate-200 dark:border-navy-700 flex items-center justify-between">
+                      <span className="text-sm font-medium text-navy-700 dark:text-navy-300">{c.destination_country}</span>
+                      <span className="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded text-xs font-bold">تایید شده</span>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
-
-            {/* Footer */}
-            <div className="sticky bottom-0 bg-slate-50 dark:bg-slate-700 p-4 text-center">
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                <Users className="w-4 h-4 inline ml-1" />
-                لیست به صورت خودکار حرکت می‌کند
-              </p>
-            </div>
           </div>
-
-          <style>{`
-            @keyframes scrollVertical {
-              0% { transform: translateY(0); }
-              100% { transform: translateY(-50%); }
-            }
-          `}</style>
         </div>
       )}
     </>

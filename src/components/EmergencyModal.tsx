@@ -1,16 +1,6 @@
 import React, { useState } from 'react';
-import { AlertTriangle, Phone, Mail, User, FileText, Send, Check, X } from 'lucide-react';
-
-const SHEETDB_API = 'https://sheetdb.io/api/v1/aefcf2ew9qblp';
-const EMERGENCY_TYPES = [
-  'بازداشت توسط مراجع امنیتی',
-  'تهدید جانی فوری',
-  'اخراج اجباری',
-  'خشونت خانگی',
-  'پرونده در خطر انقضا',
-  'وضعیت پناهندگی تهدید شده',
-  'سایر',
-];
+import { AlertTriangle, Phone, Send, Check, X } from 'lucide-react';
+import { SHEETDB_API, SHEET_NAMES, EMERGENCY_TYPES, getApiUrl } from '../config/apiConfig';
 
 interface Props {
   isOpen: boolean;
@@ -37,7 +27,7 @@ export function EmergencyModal({ isOpen, onClose }: Props) {
     setLoading(true);
     setError('');
     try {
-      await fetch(SHEETDB_API, {
+      const response = await fetch(`${getApiUrl()}?sheet=${SHEET_NAMES.EMERGENCY}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -45,6 +35,7 @@ export function EmergencyModal({ isOpen, onClose }: Props) {
             id: 'EMG-' + Date.now().toString(36).toUpperCase(),
             created_at: new Date().toISOString(),
             type: 'emergency',
+            formType: 'emergency',
             name: form.name,
             phone: form.phone,
             email: form.email,
@@ -54,12 +45,21 @@ export function EmergencyModal({ isOpen, onClose }: Props) {
             location: form.location,
             status: 'urgent',
           }],
-          sheet: 'emergency',
         }),
       });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('SheetDB error:', response.status, errorText);
+        throw new Error(`Server error: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('Emergency request saved:', result);
       setSuccess(true);
-    } catch {
-      setError('خطا در ارسال. لطفاً مستقیماً با واتساپ تماس بگیرید: +989012055578');
+    } catch (err) {
+      console.error('Submission error:', err);
+      setError('خطا در ارسال. لطفاً مستقیماً با واتساپ تماس بگیرید: +93730556547');
     }
     setLoading(false);
   };
@@ -89,9 +89,9 @@ export function EmergencyModal({ isOpen, onClose }: Props) {
         <div className="bg-red-50 dark:bg-red-900/20 px-6 py-3 flex items-center justify-between border-b border-red-200 dark:border-red-800 flex-shrink-0">
           <div className="flex items-center gap-2 text-red-700 dark:text-red-300 text-sm">
             <Phone className="w-4 h-4" />
-            واتساپ اضطراری: +989012055578
+            واتساپ اضطراری: +93730556547
           </div>
-          <a href="https://wa.me/989012055578?text=اورژانس" target="_blank" rel="noopener noreferrer"
+          <a href="https://wa.me/93730556547?text=اورژانس" target="_blank" rel="noopener noreferrer"
             className="px-3 py-1.5 bg-red-600 text-white text-xs font-bold rounded-lg hover:bg-red-700 transition-colors">
             تماس فوری
           </a>

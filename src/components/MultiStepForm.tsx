@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import emailjs from '@emailjs/browser';
 import {
   X,
   Save,
@@ -14,8 +13,12 @@ import {
   FileText,
   Eye,
   Clock,
+  Download,
 } from 'lucide-react';
-import { EMAILJS_CONFIG, SHEETDB_API, FORM_STORAGE_KEY, FORM_STEPS, FORM_FIELDS } from '../config/formConfig';
+import { SHEETDB_API, SHEET_NAMES, getApiUrl } from '../config/apiConfig';
+import { FORM_STEPS, FORM_FIELDS, FORM_STORAGE_KEY } from '../config/formConfig';
+import { FormNotice } from './FormNotice';
+import { generateApplicationPDF } from '../utils/pdfGenerator';
 
 interface FormData {
   [key: string]: string;
@@ -26,7 +29,7 @@ interface FormErrors {
 }
 
 const STORAGE_KEY = FORM_STORAGE_KEY;
-const AUTO_SAVE_DELAY = 2000; // Auto-save after 2 seconds of inactivity
+const AUTO_SAVE_DELAY = 2000;
 
 export function MultiStepForm() {
   const [currentStep, setCurrentStep] = useState(0);
@@ -184,23 +187,12 @@ export function MultiStepForm() {
       const submissionData = {
         id: `FRM-${Date.now().toString(36).toUpperCase()}`,
         submittedAt: new Date().toISOString(),
+        formType: 'multistep',
         ...formData,
       };
 
-      // Send email via EmailJS
-      await emailjs.send(
-        EMAILJS_CONFIG.serviceId,
-        EMAILJS_CONFIG.templateId,
-        {
-          ...submissionData,
-          form_id: submissionData.id,
-          submit_date: new Date().toLocaleDateString('fa-IR'),
-        },
-        EMAILJS_CONFIG.publicKey
-      );
-
-      // Store in Google Sheets via SheetDB
-      await fetch(SHEETDB_API, {
+      // Store in Google Sheets via SheetDB (applications sheet)
+      const response = await fetch(`${getApiUrl()}?sheet=${SHEET_NAMES.APPLICATIONS}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -208,8 +200,19 @@ export function MultiStepForm() {
         }),
       });
 
-      // Clear draft and show success
+      // Verify response
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('SheetDB error:', response.status, errorText);
+        throw new Error(`Server error: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('Submission saved:', result);
+
+      // Clear draft and show success ONLY after confirmed storage
       clearDraft();
+      setSubmittedData(submissionData);
       setShowSuccess(true);
     } catch (error) {
       console.error('Submission error:', error);
@@ -217,6 +220,14 @@ export function MultiStepForm() {
     }
 
     setLoading(false);
+  };
+
+  const [submittedData, setSubmittedData] = useState<any>(null);
+
+  const handleDownloadPDF = () => {
+    if (submittedData) {
+      generateApplicationPDF(submittedData);
+    }
   };
 
   const handleClose = () => {
@@ -239,21 +250,30 @@ export function MultiStepForm() {
   // Success state
   if (showSuccess) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center p-4" dir="rtl">
-        <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl p-8 max-w-md w-full text-center">
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-corporate-100 dark:from-navy-950 dark:to-navy-900 flex items-center justify-center p-4" dir="rtl">
+        <div className="bg-white dark:bg-navy-900 rounded-3xl shadow-2xl p-8 max-w-md w-full text-center">
           <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-6 animate-scale-in">
             <Check className="w-10 h-10 text-emerald-500" />
           </div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">فرم با موفقیت ارسال شد!</h2>
-          <p className="text-slate-600 dark:text-slate-400 mb-6">
-            اطلاعات شما ذخیره و ایمیلمان ارسال شد. تیم ما به زودی با شما تماس خواهد گرفت.
+          <h2 className="text-2xl font-bold text-navy-900 dark:text-white mb-4">فرم با موفقیت ارسال شد!</h2>
+          <p className="text-corporate-600 dark:text-corporate-400 mb-6">
+            اطلاعات شما ذخیره گردید. تیم ما به زودی با شما تماس خواهد گرفت.
           </p>
           <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-4 mb-6">
             <p className="text-emerald-700 dark:text-emerald-400 text-sm font-medium">
-              شماره پیگیری: {`FRM-${Date.now().toString(36).toUpperCase()}`}
+              شماره پیگیری: {submittedData?.id || `FRM-${Date.now().toString(36).toUpperCase()}`}
             </p>
           </div>
-          <a href="/" className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl transition-all">
+
+          <button
+            onClick={handleDownloadPDF}
+            className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl mb-4 transition-all"
+          >
+            <Download className="w-5 h-5" />
+            دانلود PDF
+          </button>
+
+          <a href="/" className="block text-center px-6 py-3 bg-navy-700 hover:bg-navy-800 text-white font-bold rounded-xl transition-all">
             بازگشت به صفحه اصلی
           </a>
         </div>
@@ -265,7 +285,7 @@ export function MultiStepForm() {
   const currentFields = FORM_FIELDS[currentStepId as keyof typeof FORM_FIELDS] || [];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 py-6 px-4" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-br from-corporate-50 to-corporate-100 dark:from-navy-950 dark:to-navy-900 py-6 px-4" dir="rtl">
       {/* Saved Notification */}
       {showSavedNotification && (
         <div className="fixed top-20 right-1/2 translate-x-1/2 z-50 bg-emerald-500 text-white px-6 py-3 rounded-xl shadow-lg flex items-center gap-2 animate-slide-down">
@@ -317,6 +337,11 @@ export function MultiStepForm() {
         </div>
 
         {/* Form Content */}
+        {/* Form Notice */}
+        <div className="mb-6">
+          <FormNotice />
+        </div>
+
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-6 mb-6">
           <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
             <span className="text-3xl">{FORM_STEPS[currentStep].icon}</span>

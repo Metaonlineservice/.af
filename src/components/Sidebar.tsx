@@ -206,8 +206,8 @@ export function Sidebar({ isOpen, onClose, onFormSelect, onAppointmentClick }: S
             <span className="text-sm text-slate-600 dark:text-slate-300">{t('admin')}</span>
           </a>
           <div className="flex items-center justify-between text-xs text-slate-500">
-            <span>واتساپ: +989012055578</span>
-            <a href="https://wa.me/989012055578" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline">
+            <span>واتساپ: +93730556547</span>
+            <a href="https://wa.me/93730556547" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline">
               تماس مستقیم
             </a>
           </div>

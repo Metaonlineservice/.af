@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { X, Moon, Sun, Monitor, Lock, LogOut, Check, Eye, EyeOff } from 'lucide-react';
+import { X, Moon, Sun, Lock, LogOut, Check, Eye, EyeOff } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
-
-const SHEETDB_API_URL = 'https://sheetdb.io/api/v1/aefcf2ew9qblp';
+import { SHEETDB_API, SHEET_NAMES } from '../config/apiConfig';
 
 interface Props {
   onClose: () => void;
@@ -33,7 +32,7 @@ export function SettingsModal({ onClose, onLogout }: Props) {
     setLoading(true);
     try {
       // Verify old password
-      const res = await fetch(`${SHEETDB_API_URL}/search?sheet=users&email=${encodeURIComponent(user!.email)}`);
+      const res = await fetch(`${SHEETDB_API}/search?sheet=${SHEET_NAMES.USERS}&email=${encodeURIComponent(user!.email)}`);
       const data = await res.json();
       if (!Array.isArray(data) || data.length === 0 || data[0].password !== oldPass) {
         setPassError('رمز عبور فعلی اشتباه است');
@@ -41,7 +40,7 @@ export function SettingsModal({ onClose, onLogout }: Props) {
         return;
       }
       // Update password
-      await fetch(`${SHEETDB_API_URL}/email/${encodeURIComponent(user!.email)}?sheet=users`, {
+      await fetch(`${SHEETDB_API}/email/${encodeURIComponent(user!.email)}?sheet=${SHEET_NAMES.USERS}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ data: { password: newPass } }),

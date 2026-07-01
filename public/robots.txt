@@ -1,0 +1,18 @@
+# Robots.txt for Meta Online Service
+# https://metaonlineservice.com
+
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://metaonlineservice.com/sitemap.xml
+
+# Disallow admin pages
+Disallow: /admin
+Disallow: /admin/login
+
+# Allow all public pages
+Allow: /
+Allow: /appointment
+Allow: /form/
+Allow: /multiform
